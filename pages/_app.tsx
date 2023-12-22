@@ -1,17 +1,73 @@
 import type { AppProps } from "next/app";
-import { ThirdwebProvider } from "@thirdweb-dev/react";
+import {
+  ThirdwebProvider,
+  metamaskWallet,
+  coinbaseWallet,
+  walletConnect,
+  safeWallet,
+  localWallet,
+  embeddedWallet,
+  trustWallet,
+  zerionWallet,
+  bloctoWallet,
+  frameWallet,
+  rainbowWallet,
+  phantomWallet
+} from "@thirdweb-dev/react";
+import { BaseGoerli } from "@thirdweb-dev/chains";
 import "../styles/globals.css";
-
-// This is the chain your dApp will work on.
-// Change this to the chain your app is built for.
-// You can also import additional chains from `@thirdweb-dev/chains` and pass them directly.
-const activeChain = "ethereum";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ThirdwebProvider
       clientId={process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID}
-      activeChain={activeChain}
+      supportedChains={[BaseGoerli]}
+      supportedWallets={[
+        metamaskWallet({ recommended: true }),
+        coinbaseWallet(),
+        walletConnect(),
+        safeWallet({
+          personalWallets: [
+            metamaskWallet({ recommended: true }),
+            coinbaseWallet(),
+            walletConnect(),
+            localWallet(),
+            embeddedWallet({
+              auth: {
+                options: [
+                  "email",
+                  "google",
+                  "apple",
+                  "facebook",
+                ],
+              },
+            }),
+            trustWallet(),
+            zerionWallet(),
+            bloctoWallet(),
+            frameWallet(),
+            rainbowWallet(),
+            phantomWallet(),
+          ],
+        }),
+        localWallet(),
+        embeddedWallet({
+          auth: {
+            options: [
+              "email",
+              "google",
+              "apple",
+              "facebook",
+            ],
+          },
+        }),
+        trustWallet(),
+        zerionWallet(),
+        bloctoWallet(),
+        frameWallet(),
+        rainbowWallet(),
+        phantomWallet(),
+      ]}
     >
       <Component {...pageProps} />
     </ThirdwebProvider>
