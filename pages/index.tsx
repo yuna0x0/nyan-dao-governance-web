@@ -1,4 +1,4 @@
-import { ConnectWallet, darkTheme, Web3Button } from "@thirdweb-dev/react";
+import { ConnectWallet, darkTheme } from "@thirdweb-dev/react";
 import styles from "../styles/Home.module.css";
 import { NextPage } from "next";
 import Governance from "./governance";
