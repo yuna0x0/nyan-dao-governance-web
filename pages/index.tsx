@@ -1,6 +1,7 @@
 import { ConnectWallet, darkTheme } from "@thirdweb-dev/react";
 import styles from "../styles/Home.module.css";
 import { NextPage } from "next";
+import Head from 'next/head';
 import Governance from "./governance";
 
 const Home: NextPage = () => {
@@ -8,6 +9,9 @@ const Home: NextPage = () => {
 
   return (
     <main className={styles.main}>
+      <Head>
+        <title>{dAppName}</title>
+      </Head>
       <div className={styles.container}>
         <div className={styles.header}>
           <h2>{dAppName}</h2>
