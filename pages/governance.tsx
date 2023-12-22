@@ -1,4 +1,6 @@
 import { useSupportedChains, useConnectionStatus, useChain, useSigner, useSwitchChain } from "@thirdweb-dev/react";
+import { ethers } from "ethers";
+import { useState } from 'react';
 
 export default function Governance() {
     const supportedChains = useSupportedChains();
@@ -7,6 +9,10 @@ export default function Governance() {
     const signer = useSigner();
 
     const switchChain = useSwitchChain();
+
+    const [address, setAddress] = useState("");
+    const [balance, setBalance] = useState("");
+    const [signedMessage, setSignedMessage] = useState("");
 
     const isVaildNetwork = () => {
         if (chain === undefined) return false;
@@ -41,10 +47,28 @@ export default function Governance() {
         </div>
     );
 
+    let getAddress = async () => {
+        await checkNetwork();
+        try {
+            setAddress(`Address: ${await signer?.getAddress()}`);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    let getBalance = async () => {
+        await checkNetwork();
+        try {
+            setBalance(`Balance: ${ethers.utils.formatEther(await signer?.getBalance()!)} ${chain?.nativeCurrency.symbol}`);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
     let signMessage = async () => {
         await checkNetwork();
         try {
-            console.log(`Signed Message: ${await signer?.signMessage("Hello World")}`);
+            setSignedMessage(`Signed Message: ${await signer?.signMessage("Hello World!")}`);
         } catch (e) {
             console.error(e);
         }
@@ -53,7 +77,23 @@ export default function Governance() {
     return (
         <div>
             {chain !== undefined && <p>Connected to {chain.name} ({chain.chainId})</p>}
-            <button onClick={async () => await signMessage()}>Sign Message</button>
+            <div>
+                <button onClick={async () => await getAddress()}>Get Address</button>
+                <br></br>
+                {address !== "" && <span>{address}</span>}
+            </div>
+            <br></br>
+            <div>
+                <button onClick={async () => await getBalance()}>Get Balance</button>
+                <br></br>
+                {balance !== "" && <span>{balance}</span>}
+            </div>
+            <br></br>
+            <div>
+                <button onClick={async () => await signMessage()}>Sign Message</button>
+                <br></br>
+                {signedMessage !== "" && <span>{signedMessage}</span>}
+            </div>
         </div>
     );
 }
