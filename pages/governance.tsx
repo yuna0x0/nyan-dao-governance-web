@@ -1,6 +1,7 @@
 import { useSupportedChains, useConnectionStatus, useChain, useSigner, useSwitchChain } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import { useState } from 'react';
+import { BaseGoerli } from "@thirdweb-dev/chains";
 
 export default function Governance() {
     const supportedChains = useSupportedChains();
@@ -10,9 +11,19 @@ export default function Governance() {
 
     const switchChain = useSwitchChain();
 
+    const [lastChainId, setLastChainId] = useState<number | undefined>(undefined);
     const [address, setAddress] = useState("");
     const [balance, setBalance] = useState("");
     const [signedMessage, setSignedMessage] = useState("");
+    const [wethBalance, setWETHBalance] = useState("");
+
+    const clearState = () => {
+        if (lastChainId !== undefined) setLastChainId(undefined);
+        if (address !== "") setAddress("");
+        if (balance !== "") setBalance("");
+        if (signedMessage !== "") setSignedMessage("");
+        if (wethBalance !== "") setWETHBalance("");
+    }
 
     const isVaildNetwork = () => {
         if (chain === undefined) return false;
@@ -24,31 +35,57 @@ export default function Governance() {
         return isNetworkSupported;
     }
 
-    let checkNetwork = async () => {
+    const checkNetwork = async () => {
         if (!isVaildNetwork()) {
+            clearState();
             try {
                 await switchChain(supportedChains[0].chainId);
+                return true;
             } catch (e) {
                 console.error(e);
+                return false;
             }
-            return;
         }
+        return true;
     }
 
-    if (connectionStatus === "unknown") return (<p>Loading...</p>);
-    if (connectionStatus === "connecting") return (<p>Connecting...</p>);
-    if (connectionStatus === "disconnected") return (<p>Connect wallet to access</p>);
+    switch (connectionStatus) {
+        case "connected":
+            break;
+        case "unknown":
+            clearState();
+            return (<p>Loading...</p>);
+        case "connecting":
+            clearState();
+            return (<p>Connecting...</p>);
+        case "disconnected":
+            clearState();
+            return (<p>Connect wallet to access</p>);
+        default:
+            clearState();
+            return (<p>Unknown connection status</p>);
+    }
 
-    if (!isVaildNetwork()) return (
-        <div>
-            {chain !== undefined && <p>Connected to {chain.name} ({chain.chainId})</p>}
-            <p style={{ color: 'red' }}>Unsupported Chain</p>
-            <button onClick={() => { checkNetwork() }}>Switch Network</button>
-        </div>
-    );
+    if (!isVaildNetwork()) {
+        clearState();
+        return (
+            <div>
+                {chain !== undefined && <p>Connected to {chain.name} ({chain.chainId})</p>}
+                <p style={{ color: 'red' }}>Unsupported Chain</p>
+                <button onClick={() => { checkNetwork() }}>Switch Network</button>
+            </div>
+        );
+    }
 
-    let getAddress = async () => {
-        await checkNetwork();
+    if (lastChainId === undefined) {
+        setLastChainId(chain?.chainId);
+    } else if (lastChainId !== chain?.chainId) {
+        clearState();
+        setLastChainId(chain?.chainId);
+    }
+
+    const getAddress = async () => {
+        if (!await checkNetwork()) return;
         try {
             setAddress(`Address: ${await signer?.getAddress()}`);
         } catch (e) {
@@ -56,8 +93,8 @@ export default function Governance() {
         }
     }
 
-    let getBalance = async () => {
-        await checkNetwork();
+    const getBalance = async () => {
+        if (!await checkNetwork()) return;
         try {
             setBalance(`Balance: ${ethers.utils.formatEther(await signer?.getBalance()!)} ${chain?.nativeCurrency.symbol}`);
         } catch (e) {
@@ -65,10 +102,30 @@ export default function Governance() {
         }
     }
 
-    let signMessage = async () => {
-        await checkNetwork();
+    const signMessage = async () => {
+        if (!await checkNetwork()) return;
         try {
             setSignedMessage(`Signed Message: ${await signer?.signMessage("Hello World!")}`);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    const getWETHBalance = async () => {
+        if (!await checkNetwork()) return;
+        try {
+            let wethAddress;
+            switch (chain?.chainId) {
+                case BaseGoerli.chainId:
+                    wethAddress = "0x4200000000000000000000000000000000000006";
+                    break;
+                default:
+                    setWETHBalance("Unsupported Chain");
+                    return;
+            }
+            const wethContract = new ethers.Contract(wethAddress, ["function balanceOf(address account) view returns (uint256)"], signer);
+            const balance = await wethContract.balanceOf(await signer?.getAddress());
+            setWETHBalance(`WETH Balance: ${ethers.utils.formatEther(balance)} WETH`);
         } catch (e) {
             console.error(e);
         }
@@ -77,6 +134,7 @@ export default function Governance() {
     return (
         <div>
             {chain !== undefined && <p>Connected to {chain.name} ({chain.chainId})</p>}
+            <hr></hr>
             <div>
                 <button onClick={async () => await getAddress()}>Get Address</button>
                 <br></br>
@@ -93,6 +151,12 @@ export default function Governance() {
                 <button onClick={async () => await signMessage()}>Sign Message</button>
                 <br></br>
                 {signedMessage !== "" && <span>{signedMessage}</span>}
+            </div>
+            <hr></hr>
+            <div>
+                <button onClick={async () => await getWETHBalance()}>Get WETH Balance</button>
+                <br></br>
+                {wethBalance !== "" && <span>{wethBalance}</span>}
             </div>
         </div>
     );
