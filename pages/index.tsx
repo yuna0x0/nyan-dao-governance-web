@@ -2,6 +2,8 @@ import { ConnectWallet, darkTheme } from "@thirdweb-dev/react";
 import styles from "../styles/Home.module.css";
 import { NextPage } from "next";
 import Head from 'next/head';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.min.css';
 import Governance from "./governance";
 
 const Home: NextPage = () => {
@@ -42,6 +44,9 @@ const Home: NextPage = () => {
           <Governance />
         </div>
       </div>
+      <ToastContainer
+        theme="dark"
+      />
     </main>
   );
 };

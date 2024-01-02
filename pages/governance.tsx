@@ -1,6 +1,7 @@
 import { useSupportedChains, useConnectionStatus, useChain, useSigner, useSwitchChain } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 import { BaseGoerli } from "@thirdweb-dev/chains";
 
 export default function Governance() {
@@ -90,6 +91,7 @@ export default function Governance() {
             setAddress(`Address: ${await signer?.getAddress()}`);
         } catch (e) {
             console.error(e);
+            toast.error(`${e}`);
         }
     }
 
@@ -99,15 +101,32 @@ export default function Governance() {
             setBalance(`Balance: ${ethers.utils.formatEther(await signer?.getBalance()!)} ${chain?.nativeCurrency.symbol}`);
         } catch (e) {
             console.error(e);
+            toast.error(`${e}`);
         }
     }
 
     const signMessage = async () => {
         if (!await checkNetwork()) return;
         try {
-            setSignedMessage(`Signed Message: ${await signer?.signMessage("Hello World!")}`);
+            const signedMessage = signer!.signMessage("Hello World");
+            toast.promise(
+                signedMessage,
+                {
+                    pending: `Signing Message...`,
+                    success: {
+                        render({ data }) {
+                            return `Signed message: ${data}`;
+                        }
+                    }
+                }
+            ).then((v) => {
+                setSignedMessage(`Signed Message: ${v}`);
+            }).catch((e) => {
+                toast.error(`${e}`);
+            });
         } catch (e) {
             console.error(e);
+            toast.error(`${e}`);
         }
     }
 
@@ -128,6 +147,126 @@ export default function Governance() {
             setWETHBalance(`WETH Balance: ${ethers.utils.formatEther(balance)} WETH`);
         } catch (e) {
             console.error(e);
+            toast.error(`${e}`);
+        }
+    }
+
+    const wrapETH = async (amount: string) => {
+        if (!await checkNetwork()) return;
+
+        if (amount === "") {
+            toast.error("Amount cannot be empty");
+            return;
+        }
+
+        try {
+            let wethAddress;
+            switch (chain?.chainId) {
+                case BaseGoerli.chainId:
+                    wethAddress = "0x4200000000000000000000000000000000000006";
+                    break;
+                default:
+                    toast.error("Unsupported Chain");
+                    return;
+            }
+            const wethContract = new ethers.Contract(wethAddress, ["function deposit() payable"], signer);
+            const tx = wethContract.deposit({ value: ethers.utils.parseEther(amount) });
+            toast.promise(
+                tx,
+                {
+                    pending: `Wrapping ${amount} ETH...`,
+                    success: `Tx Hash: ${tx.hash}`,
+                    error: {
+                        render({ data }) {
+                            return `${(data as any).message}`;
+                        }
+                    }
+                }
+            )
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    }
+
+    const unwrapETH = async (amount: string) => {
+        if (!await checkNetwork()) return;
+
+        if (amount === "") {
+            toast.error("Amount cannot be empty");
+            return;
+        }
+
+        try {
+            let wethAddress;
+            switch (chain?.chainId) {
+                case BaseGoerli.chainId:
+                    wethAddress = "0x4200000000000000000000000000000000000006";
+                    break;
+                default:
+                    toast.error("Unsupported Chain");
+                    return;
+            }
+            const wethContract = new ethers.Contract(wethAddress, ["function withdraw(uint256 wad)"], signer);
+            const tx = wethContract.withdraw(ethers.utils.parseEther(amount));
+            toast.promise(
+                tx,
+                {
+                    pending: `Unwrapping ${amount} WETH...`,
+                    success: `Tx Hash: ${tx.hash}`,
+                    error: {
+                        render({ data }) {
+                            return `${(data as any).message}`;
+                        }
+                    }
+                }
+            )
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    }
+
+    const sendWETH = async (to: string, amount: string) => {
+        if (!await checkNetwork()) return;
+
+        if (to === "") {
+            toast.error("Address cannot be empty");
+            return;
+        }
+
+        if (amount === "") {
+            toast.error("Amount cannot be empty");
+            return;
+        }
+
+        try {
+            let wethAddress;
+            switch (chain?.chainId) {
+                case BaseGoerli.chainId:
+                    wethAddress = "0x4200000000000000000000000000000000000006";
+                    break;
+                default:
+                    toast.error("Unsupported Chain");
+                    return;
+            }
+            const wethContract = new ethers.Contract(wethAddress, ["function transfer(address to, uint256 amount)"], signer);
+            const tx = wethContract.transfer(to, ethers.utils.parseEther(amount));
+            toast.promise(
+                tx,
+                {
+                    pending: `Sending ${amount} WETH to ${to}...`,
+                    success: `Tx Hash: ${tx.hash}`,
+                    error: {
+                        render({ data }) {
+                            return `${(data as any).message}`;
+                        }
+                    }
+                }
+            )
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
         }
     }
 
@@ -157,6 +296,18 @@ export default function Governance() {
                 <button onClick={async () => await getWETHBalance()}>Get WETH Balance</button>
                 <br></br>
                 {wethBalance !== "" && <span>{wethBalance}</span>}
+            </div>
+            <br></br>
+            <div>
+                <input type="text" placeholder="Amount" id="weth-wrap-amount" />
+                <button onClick={async () => await wrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Wrap ETH</button>
+                <button onClick={async () => await unwrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Unwrap WETH</button>
+            </div>
+            <br></br>
+            <div>
+                <input type="text" placeholder="Address" id="weth-send-to" />
+                <input type="text" placeholder="Amount" id="weth-send-amount" />
+                <button onClick={async () => await sendWETH((document.getElementById("weth-send-to") as HTMLInputElement).value, (document.getElementById("weth-send-amount") as HTMLInputElement).value)}>Send WETH</button>
             </div>
         </div>
     );
