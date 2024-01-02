@@ -45,6 +45,8 @@ const Home: NextPage = () => {
         </div>
       </div>
       <ToastContainer
+        closeOnClick={false}
+        draggable={false}
         theme="dark"
       />
     </main>

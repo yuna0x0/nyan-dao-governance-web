@@ -14,14 +14,14 @@ import {
   rainbowWallet,
   phantomWallet
 } from "@thirdweb-dev/react";
-import { BaseGoerli } from "@thirdweb-dev/chains";
+import { BaseGoerli, Localhost } from "@thirdweb-dev/chains";
 import "../styles/globals.css";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ThirdwebProvider
       clientId={process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID}
-      supportedChains={[BaseGoerli]}
+      supportedChains={[BaseGoerli, Localhost]}
       supportedWallets={[
         metamaskWallet({ recommended: true }),
         coinbaseWallet(),
