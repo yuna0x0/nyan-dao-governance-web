@@ -1,3 +1,4 @@
+'use client';
 import { useSupportedChains, useConnectionStatus, useChainId, useChain, useSigner, useAddress, useSwitchChain } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import { useState } from 'react';
@@ -157,7 +158,7 @@ export default function Governance() {
                     success: {
                         render({ data }) {
                             if (chainExplorerUrl !== undefined)
-                                return <div>Tx Hash: <a href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
+                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
                             else
                                 return `Tx Hash: ${data?.hash}`;
                         }
@@ -223,7 +224,7 @@ export default function Governance() {
                     success: {
                         render({ data }) {
                             if (chainExplorerUrl !== undefined)
-                                return <div>Tx Hash: <a href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
+                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
                             else
                                 return `Tx Hash: ${(data as ethers.providers.TransactionResponse).hash}`;
                         }
@@ -268,7 +269,7 @@ export default function Governance() {
                     success: {
                         render({ data }) {
                             if (chainExplorerUrl !== undefined)
-                                return <div>Tx Hash: <a href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
+                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
                             else
                                 return `Tx Hash: ${(data as ethers.providers.TransactionResponse).hash}`;
                         }
@@ -318,7 +319,7 @@ export default function Governance() {
                     success: {
                         render({ data }) {
                             if (chainExplorerUrl !== undefined)
-                                return <div>Tx Hash: <a href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
+                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
                             else
                                 return `Tx Hash: ${(data as ethers.providers.TransactionResponse).hash}`;
                         }
@@ -368,7 +369,7 @@ export default function Governance() {
                     success: {
                         render({ data }) {
                             if (chainExplorerUrl !== undefined)
-                                return <div>Tx Hash: <a href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
+                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
                             else
                                 return `Tx Hash: ${(data as ethers.providers.TransactionResponse).hash}`;
                         }
@@ -423,7 +424,7 @@ export default function Governance() {
                     success: {
                         render({ data }) {
                             if (chainExplorerUrl !== undefined)
-                                return <div>Tx Hash: <a href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
+                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data as ethers.providers.TransactionResponse).hash}</a></div>;
                             else
                                 return `Tx Hash: ${(data as ethers.providers.TransactionResponse).hash}`;
                         }
@@ -447,54 +448,74 @@ export default function Governance() {
             <div>
                 {address !== "" && <span>Address: {address}</span>}
             </div>
-            <hr></hr>
+            <div className="ts-divider has-vertically-spaced"></div>
             <div>
-                <button onClick={async () => await getBalance()}>Get Balance</button>
+                <button className="ts-button" onClick={async () => await getBalance()}>Get Balance</button>
                 <br></br>
                 {balance !== "" && <span>{balance}</span>}
             </div>
             <br></br>
             <div>
-                <button onClick={async () => await signMessage()}>Sign Message</button>
+                <button className="ts-button" onClick={async () => await signMessage()}>Sign Message</button>
                 <br></br>
                 {signedMessage !== "" && <span>{signedMessage}</span>}
             </div>
             <br></br>
-            <div>
-                <input type="text" placeholder="Address" id="eth-send-to" />
-                <input type="text" placeholder="Amount" id="eth-send-amount" />
-                <button onClick={async () => await sendETH((document.getElementById("eth-send-to") as HTMLInputElement).value, (document.getElementById("eth-send-amount") as HTMLInputElement).value)}>Send ETH</button>
+            <div className="ts-grid">
+                <div className="ts-input column is-4-wide">
+                    <input type="text" placeholder="Address" id="eth-send-to" />
+                </div>
+                <div className="ts-input column is-4-wide">
+                    <input type="text" placeholder="Amount" id="eth-send-amount" />
+                </div>
+                <button className="ts-button" onClick={async () => await sendETH((document.getElementById("eth-send-to") as HTMLInputElement).value, (document.getElementById("eth-send-amount") as HTMLInputElement).value)}>Send ETH</button>
             </div>
-            <hr></hr>
+            <div className="ts-divider has-vertically-spaced"></div>
             <div>
-                <button onClick={async () => await getWETHBalance()}>Get WETH Balance</button>
+                <button className="ts-button" onClick={async () => await getWETHBalance()}>Get WETH Balance</button>
                 <br></br>
                 {wethBalance !== "" && <span>{wethBalance}</span>}
             </div>
             <br></br>
-            <div>
-                <input type="text" placeholder="Amount" id="weth-wrap-amount" />
-                <button onClick={async () => await wrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Wrap ETH</button>
-                <button onClick={async () => await unwrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Unwrap WETH</button>
+            <div className="ts-grid">
+                <div className="ts-input column is-4-wide">
+                    <input type="text" placeholder="Amount" id="weth-wrap-amount" />
+                </div>
+                <button className="ts-button" onClick={async () => await wrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Wrap ETH</button>
+                <button className="ts-button" onClick={async () => await unwrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Unwrap WETH</button>
             </div>
             <br></br>
-            <div>
-                <input type="text" placeholder="To Address" id="weth-transfer-to" />
-                <input type="text" placeholder="Amount" id="weth-transfer-amount" />
-                <button onClick={async () => await transferWETH((document.getElementById("weth-transfer-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-amount") as HTMLInputElement).value)}>Transfer WETH</button>
+            <div className="ts-grid">
+                <div className="ts-input column is-4-wide">
+                    <input type="text" placeholder="To Address" id="weth-transfer-to" />
+                </div>
+                <div className="ts-input column is-4-wide">
+                    <input type="text" placeholder="Amount" id="weth-transfer-amount" />
+                </div>
+                <button className="ts-button" onClick={async () => await transferWETH((document.getElementById("weth-transfer-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-amount") as HTMLInputElement).value)}>Transfer WETH</button>
             </div>
             <br></br>
-            <div>
-                <input type="text" placeholder="Spender" id="weth-approve-spender" />
-                <input type="text" placeholder="Amount" id="weth-approve-amount" />
-                <button onClick={async () => await approveWETH((document.getElementById("weth-approve-spender") as HTMLInputElement).value, (document.getElementById("weth-approve-amount") as HTMLInputElement).value)}>Approve WETH</button>
+            <div className="ts-grid">
+                <div className="ts-input column is-4-wide">
+                    <input type="text" placeholder="Spender" id="weth-approve-spender" />
+                </div>
+                <div className="ts-input column is-4-wide">
+                    <input type="text" placeholder="Amount" id="weth-approve-amount" />
+                </div>
+                <button className="ts-button" onClick={async () => await approveWETH((document.getElementById("weth-approve-spender") as HTMLInputElement).value, (document.getElementById("weth-approve-amount") as HTMLInputElement).value)}>Approve WETH</button>
             </div>
             <br></br>
-            <div>
-                <input type="text" placeholder="From Address" id="weth-transfer-from-from" />
-                <input type="text" placeholder="To Address" id="weth-transfer-from-to" />
-                <input type="text" placeholder="Amount" id="weth-transfer-from-amount" />
-                <button onClick={async () => await transferWETHFrom((document.getElementById("weth-transfer-from-from") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-amount") as HTMLInputElement).value)}>Transfer WETH From</button>
+            <div className="ts-grid">
+                <div className="ts-input column is-4-wide">
+                    <input type="text" placeholder="From Address" id="weth-transfer-from-from" />
+                </div>
+                <div className="ts-input column is-4-wide">
+                    <input type="text" placeholder="To Address" id="weth-transfer-from-to" />
+                </div>
+                <div className="ts-input column is-4-wide">
+                    <input type="text" placeholder="Amount" id="weth-transfer-from-amount" />
+                </div>
+                <button className="ts-button" onClick={async () => await transferWETHFrom((document.getElementById("weth-transfer-from-from") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-amount") as HTMLInputElement).value)}>Transfer WETH From</button>
             </div>
         </div>
     );

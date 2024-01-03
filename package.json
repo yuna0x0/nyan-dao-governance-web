@@ -11,20 +11,25 @@
   },
   "dependencies": {
     "@thirdweb-dev/chains": "^0.1.62",
-    "@thirdweb-dev/react": "^4",
-    "@thirdweb-dev/sdk": "^4",
+    "@thirdweb-dev/react": "4.1.17",
+    "@thirdweb-dev/sdk": "^4.0.24",
     "ethers": "^5",
-    "next": "^14",
-    "react": "^18.2",
-    "react-dom": "^18.2",
-    "react-toastify": "^9.1.3"
+    "next": "14.0.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-toastify": "^9.1.3",
+    "tocas": "^4.2.5"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.8.2",
-    "@types/node": "^20.10.5",
+    "@cloudflare/next-on-pages": "^1.8.3",
+    "@types/node": "^20",
     "@types/react": "^18",
-    "eslint": "^8.29.0",
-    "eslint-config-next": "^14",
-    "typescript": "^5.3.3"
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.4",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5"
   }
 }
