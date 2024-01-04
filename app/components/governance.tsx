@@ -8,6 +8,7 @@ import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
 import { BASE_GOERLI_WETH_ADDRESS, ERC20_BYTECODE } from "../constants";
 
 export default function Governance() {
+    //#region Init
     const supportedChains = useSupportedChains();
     const connectionStatus = useConnectionStatus();
     const chainId = useChainId();
@@ -57,7 +58,9 @@ export default function Governance() {
         }
         return true;
     }
+    //#endregion Init
 
+    //#region NetworkCheck
     switch (connectionStatus) {
         case "connected":
             break;
@@ -85,7 +88,9 @@ export default function Governance() {
             </div>
         );
     }
+    //#endregion NetworkCheck
 
+    //#region StateCheck
     if (lastChainId === undefined) {
         setLastChainId(chain?.chainId);
     } else if (lastChainId !== chain?.chainId) {
@@ -99,7 +104,9 @@ export default function Governance() {
         clearState();
         setLastAddress(address);
     }
+    //#endregion StateCheck
 
+    //#region ETH
     const getBalance = async () => {
         if (!await checkNetwork()) return;
         try {
@@ -198,7 +205,9 @@ export default function Governance() {
             toast.error(`${e}`);
         }
     }
+    //#endregion ETH
 
+    //#region WETH
     const wrapETH = async (amount: string) => {
         if (!await checkNetwork()) return;
 
@@ -443,7 +452,9 @@ export default function Governance() {
             toast.error(`${e}`);
         }
     }
+    //#endregion WETH
 
+    //#region ERC20 Factory
     const deployERC20 = async (owner: string, name: string, symbol: string, initSupply: string) => {
         if (!await checkNetwork()) return;
 
@@ -525,7 +536,9 @@ export default function Governance() {
             toast.error(`${e}`);
         }
     }
+    //#endregion ERC20 Factory
 
+    //#region ERC20
     const getERC20Name = async (address: string) => {
         if (!await checkNetwork()) return;
 
@@ -561,6 +574,43 @@ export default function Governance() {
             toast.error(`${e}`);
         }
     }
+
+    const getERC20Decimals = async (address: string) => {
+        if (!await checkNetwork()) return;
+
+        if (address === "") {
+            toast.error("Address cannot be empty");
+            return;
+        }
+
+        try {
+            const contract = new ethers.Contract(address, ERC20.abi, signer);
+            const decimals = await contract.decimals();
+            toast.success(`Decimals: ${decimals}`);
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    }
+
+    const getERC20TotalSupply = async (address: string) => {
+        if (!await checkNetwork()) return;
+
+        if (address === "") {
+            toast.error("Address cannot be empty");
+            return;
+        }
+
+        try {
+            const contract = new ethers.Contract(address, ERC20.abi, signer);
+            const totalSupply = await contract.totalSupply();
+            toast.success(`Total Supply: ${totalSupply / (Math.pow(10, await contract.decimals()))} ${await contract.symbol()} (${totalSupply})`);
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    }
+    //#endregion ERC20
 
     return (
         <div>
@@ -664,11 +714,13 @@ export default function Governance() {
                 <br></br>
                 <p>Testing</p>
                 <div className="ts-grid">
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="Token Address" id="erc20-test-address" />
                     </div>
                     <button className="ts-button" onClick={async () => await getERC20Name((document.getElementById("erc20-test-address") as HTMLInputElement).value)}>Get ERC20 Name</button>
                     <button className="ts-button" onClick={async () => await getERC20Symbol((document.getElementById("erc20-test-address") as HTMLInputElement).value)}>Get ERC20 Symbol</button>
+                    <button className="ts-button" onClick={async () => await getERC20Decimals((document.getElementById("erc20-test-address") as HTMLInputElement).value)}>Get ERC20 Decimals</button>
+                    <button className="ts-button" onClick={async () => await getERC20TotalSupply((document.getElementById("erc20-test-address") as HTMLInputElement).value)}>Get ERC20 Total Supply</button>
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
