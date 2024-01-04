@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { BaseGoerli } from "@thirdweb-dev/chains";
+import { baseGoerliWethAddress } from "../constants";
 
 export default function Governance() {
     const supportedChains = useSupportedChains();
@@ -182,7 +183,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = "0x4200000000000000000000000000000000000006";
+                    wethAddress = baseGoerliWethAddress;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -209,7 +210,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = "0x4200000000000000000000000000000000000006";
+                    wethAddress = baseGoerliWethAddress;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -254,7 +255,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = "0x4200000000000000000000000000000000000006";
+                    wethAddress = baseGoerliWethAddress;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -304,7 +305,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = "0x4200000000000000000000000000000000000006";
+                    wethAddress = baseGoerliWethAddress;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -354,7 +355,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = "0x4200000000000000000000000000000000000006";
+                    wethAddress = baseGoerliWethAddress;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -409,7 +410,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = "0x4200000000000000000000000000000000000006";
+                    wethAddress = baseGoerliWethAddress;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -449,74 +450,112 @@ export default function Governance() {
                 {address !== "" && <span>Address: {address}</span>}
             </div>
             <div className="ts-divider has-vertically-spaced"></div>
-            <div>
-                <button className="ts-button" onClick={async () => await getBalance()}>Get Balance</button>
-                <br></br>
-                {balance !== "" && <span>{balance}</span>}
-            </div>
-            <br></br>
-            <div>
-                <button className="ts-button" onClick={async () => await signMessage()}>Sign Message</button>
-                <br></br>
-                {signedMessage !== "" && <span>{signedMessage}</span>}
-            </div>
-            <br></br>
-            <div className="ts-grid">
-                <div className="ts-input column is-4-wide">
-                    <input type="text" placeholder="Address" id="eth-send-to" />
+            <details className="ts-accordion">
+                <summary>ETH</summary>
+                <div>
+                    <button className="ts-button" onClick={async () => await getBalance()}>Get Balance</button>
+                    <br></br>
+                    {balance !== "" && <span>{balance}</span>}
                 </div>
-                <div className="ts-input column is-4-wide">
-                    <input type="text" placeholder="Amount" id="eth-send-amount" />
+                <br></br>
+                <div>
+                    <button className="ts-button" onClick={async () => await signMessage()}>Sign Message</button>
+                    <br></br>
+                    {signedMessage !== "" && <span>{signedMessage}</span>}
                 </div>
-                <button className="ts-button" onClick={async () => await sendETH((document.getElementById("eth-send-to") as HTMLInputElement).value, (document.getElementById("eth-send-amount") as HTMLInputElement).value)}>Send ETH</button>
-            </div>
+                <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Address" id="eth-send-to" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Amount" id="eth-send-amount" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await sendETH((document.getElementById("eth-send-to") as HTMLInputElement).value, (document.getElementById("eth-send-amount") as HTMLInputElement).value)}>Send ETH</button>
+                </div>
+            </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <div>
-                <button className="ts-button" onClick={async () => await getWETHBalance()}>Get WETH Balance</button>
+            <details className="ts-accordion">
+                <summary>WETH</summary>
+                <div>
+                    <button className="ts-button" onClick={async () => await getWETHBalance()}>Get WETH Balance</button>
+                    <br></br>
+                    {wethBalance !== "" && <span>{wethBalance}</span>}
+                </div>
                 <br></br>
-                {wethBalance !== "" && <span>{wethBalance}</span>}
-            </div>
-            <br></br>
-            <div className="ts-grid">
-                <div className="ts-input column is-4-wide">
-                    <input type="text" placeholder="Amount" id="weth-wrap-amount" />
+                <div className="ts-grid">
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Amount" id="weth-wrap-amount" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await wrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Wrap ETH</button>
+                    <button className="ts-button" onClick={async () => await unwrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Unwrap WETH</button>
                 </div>
-                <button className="ts-button" onClick={async () => await wrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Wrap ETH</button>
-                <button className="ts-button" onClick={async () => await unwrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Unwrap WETH</button>
-            </div>
-            <br></br>
-            <div className="ts-grid">
-                <div className="ts-input column is-4-wide">
-                    <input type="text" placeholder="To Address" id="weth-transfer-to" />
+                <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="To Address" id="weth-transfer-to" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Amount" id="weth-transfer-amount" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await transferWETH((document.getElementById("weth-transfer-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-amount") as HTMLInputElement).value)}>Transfer WETH</button>
                 </div>
-                <div className="ts-input column is-4-wide">
-                    <input type="text" placeholder="Amount" id="weth-transfer-amount" />
+                <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Spender" id="weth-approve-spender" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Amount" id="weth-approve-amount" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await approveWETH((document.getElementById("weth-approve-spender") as HTMLInputElement).value, (document.getElementById("weth-approve-amount") as HTMLInputElement).value)}>Approve WETH</button>
                 </div>
-                <button className="ts-button" onClick={async () => await transferWETH((document.getElementById("weth-transfer-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-amount") as HTMLInputElement).value)}>Transfer WETH</button>
-            </div>
-            <br></br>
-            <div className="ts-grid">
-                <div className="ts-input column is-4-wide">
-                    <input type="text" placeholder="Spender" id="weth-approve-spender" />
+                <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="From Address" id="weth-transfer-from-from" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="To Address" id="weth-transfer-from-to" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Amount" id="weth-transfer-from-amount" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await transferWETHFrom((document.getElementById("weth-transfer-from-from") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-amount") as HTMLInputElement).value)}>Transfer WETH From</button>
                 </div>
-                <div className="ts-input column is-4-wide">
-                    <input type="text" placeholder="Amount" id="weth-approve-amount" />
-                </div>
-                <button className="ts-button" onClick={async () => await approveWETH((document.getElementById("weth-approve-spender") as HTMLInputElement).value, (document.getElementById("weth-approve-amount") as HTMLInputElement).value)}>Approve WETH</button>
-            </div>
-            <br></br>
-            <div className="ts-grid">
-                <div className="ts-input column is-4-wide">
-                    <input type="text" placeholder="From Address" id="weth-transfer-from-from" />
-                </div>
-                <div className="ts-input column is-4-wide">
-                    <input type="text" placeholder="To Address" id="weth-transfer-from-to" />
-                </div>
-                <div className="ts-input column is-4-wide">
-                    <input type="text" placeholder="Amount" id="weth-transfer-from-amount" />
-                </div>
-                <button className="ts-button" onClick={async () => await transferWETHFrom((document.getElementById("weth-transfer-from-from") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-amount") as HTMLInputElement).value)}>Transfer WETH From</button>
-            </div>
+            </details>
+            <div className="ts-divider has-vertically-spaced"></div>
+            <details className="ts-accordion">
+                <summary>ERC20 Token Factory</summary>
+            </details>
+            <div className="ts-divider has-vertically-spaced"></div>
+            <details className="ts-accordion">
+                <summary>OpenZeppelin Governance Factory</summary>
+            </details>
+            <div className="ts-divider has-vertically-spaced"></div>
+            <details className="ts-accordion">
+                <summary>DAO Token (ERC20)</summary>
+            </details>
+            <div className="ts-divider has-vertically-spaced"></div>
+            <details className="ts-accordion">
+                <summary>OpenZeppelin Governance</summary>
+            </details>
+            <div className="ts-divider has-vertically-spaced"></div>
+            <details className="ts-accordion">
+                <summary>Founder Features</summary>
+            </details>
+            <div className="ts-divider has-vertically-spaced"></div>
+            <details className="ts-accordion">
+                <summary>Steward Features</summary>
+            </details>
+            <div className="ts-divider has-vertically-spaced"></div>
+            <details className="ts-accordion">
+                <summary>Working Group Features</summary>
+            </details>
+            <div className="ts-divider has-vertically-spaced"></div>
+            <details className="ts-accordion">
+                <summary>Token Holder Features</summary>
+            </details>
         </div>
     );
 }
