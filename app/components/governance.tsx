@@ -530,7 +530,7 @@ export default function Governance() {
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
-                <summary>OpenZeppelin Governance Factory</summary>
+                <summary>OpenZeppelin Governor Factory</summary>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
@@ -538,7 +538,7 @@ export default function Governance() {
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
-                <summary>OpenZeppelin Governance</summary>
+                <summary>OpenZeppelin Governor</summary>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
