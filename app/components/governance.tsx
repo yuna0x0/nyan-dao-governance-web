@@ -464,7 +464,7 @@ export default function Governance() {
         }
 
         if (name === "") {
-            toast.error("Name cannot be empty");
+            toast.error("Token Name cannot be empty");
             return;
         }
 
