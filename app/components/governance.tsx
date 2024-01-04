@@ -641,10 +641,10 @@ export default function Governance() {
                 </div>
                 <br></br>
                 <div className="ts-grid">
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="Address" id="eth-send-to" />
                     </div>
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Amount" id="eth-send-amount" />
                     </div>
                     <button className="ts-button" onClick={async () => await sendETH((document.getElementById("eth-send-to") as HTMLInputElement).value, (document.getElementById("eth-send-amount") as HTMLInputElement).value)}>Send ETH</button>
@@ -660,7 +660,7 @@ export default function Governance() {
                 </div>
                 <br></br>
                 <div className="ts-grid">
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Amount" id="weth-wrap-amount" />
                     </div>
                     <button className="ts-button" onClick={async () => await wrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Wrap ETH</button>
@@ -668,33 +668,33 @@ export default function Governance() {
                 </div>
                 <br></br>
                 <div className="ts-grid">
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="To Address" id="weth-transfer-to" />
                     </div>
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Amount" id="weth-transfer-amount" />
                     </div>
                     <button className="ts-button" onClick={async () => await transferWETH((document.getElementById("weth-transfer-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-amount") as HTMLInputElement).value)}>Transfer WETH</button>
                 </div>
                 <br></br>
                 <div className="ts-grid">
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="Spender" id="weth-approve-spender" />
                     </div>
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Amount" id="weth-approve-amount" />
                     </div>
                     <button className="ts-button" onClick={async () => await approveWETH((document.getElementById("weth-approve-spender") as HTMLInputElement).value, (document.getElementById("weth-approve-amount") as HTMLInputElement).value)}>Approve WETH</button>
                 </div>
                 <br></br>
                 <div className="ts-grid">
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="From Address" id="weth-transfer-from-from" />
                     </div>
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="To Address" id="weth-transfer-from-to" />
                     </div>
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Amount" id="weth-transfer-from-amount" />
                     </div>
                     <button className="ts-button" onClick={async () => await transferWETHFrom((document.getElementById("weth-transfer-from-from") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-amount") as HTMLInputElement).value)}>Transfer WETH From</button>
@@ -704,16 +704,16 @@ export default function Governance() {
             <details className="ts-accordion">
                 <summary>ERC20 Token Factory</summary>
                 <div className="ts-grid">
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="Owner Address" id="erc20-deploy-owner" />
                     </div>
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Token Name" id="erc20-deploy-name" />
                     </div>
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-2-wide">
                         <input type="text" placeholder="Symbol" id="erc20-deploy-symbol" />
                     </div>
-                    <div className="ts-input column is-4-wide">
+                    <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Initial Supply" id="erc20-deploy-init-supply" />
                     </div>
                     <button className="ts-button" onClick={async () => await deployERC20((document.getElementById("erc20-deploy-owner") as HTMLInputElement).value, (document.getElementById("erc20-deploy-name") as HTMLInputElement).value, (document.getElementById("erc20-deploy-symbol") as HTMLInputElement).value, (document.getElementById("erc20-deploy-init-supply") as HTMLInputElement).value)}>Deploy ERC20 Token</button>
