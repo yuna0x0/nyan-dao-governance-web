@@ -10,6 +10,7 @@
     "deploy": "next build && npx thirdweb@latest upload out"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^5.0.1",
     "@thirdweb-dev/chains": "^0.1.62",
     "@thirdweb-dev/react": "^4",
     "@thirdweb-dev/sdk": "^4",

@@ -4,7 +4,8 @@ import { ethers } from "ethers";
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { BaseGoerli } from "@thirdweb-dev/chains";
-import { baseGoerliWethAddress } from "../constants";
+import ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
+import { BASE_GOERLI_WETH_ADDRESS, ERC20_BYTECODE } from "../constants";
 
 export default function Governance() {
     const supportedChains = useSupportedChains();
@@ -183,7 +184,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = baseGoerliWethAddress;
+                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -210,7 +211,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = baseGoerliWethAddress;
+                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -255,7 +256,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = baseGoerliWethAddress;
+                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -305,7 +306,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = baseGoerliWethAddress;
+                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -355,7 +356,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = baseGoerliWethAddress;
+                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -410,7 +411,7 @@ export default function Governance() {
             let wethAddress;
             switch (chain?.chainId) {
                 case BaseGoerli.chainId:
-                    wethAddress = baseGoerliWethAddress;
+                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
                     break;
                 default:
                     toast.error("Unsupported Chain");
@@ -437,6 +438,124 @@ export default function Governance() {
                     }
                 }
             )
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    }
+
+    const deployERC20 = async (owner: string, name: string, symbol: string, initSupply: string) => {
+        if (!await checkNetwork()) return;
+
+        if (owner === "") {
+            toast.error("Owner cannot be empty");
+            return;
+        }
+
+        if (name === "") {
+            toast.error("Name cannot be empty");
+            return;
+        }
+
+        if (symbol === "") {
+            toast.error("Symbol cannot be empty");
+            return;
+        }
+
+        if (initSupply === "") {
+            toast.error("Initial Supply cannot be empty");
+            return;
+        }
+
+        try {
+            const factory = new ethers.ContractFactory(
+                [
+                    "constructor(address initialOwner, string name, string symbol, uint256 initialSupply)"
+                ],
+                ERC20_BYTECODE, signer);
+            const tx = factory.deploy(owner, name, symbol, initSupply);
+
+            let deployedAddress = "";
+
+            await toast.promise(
+                tx,
+                {
+                    pending: `Deploying ERC20 Token...`,
+                    success: {
+                        render({ data }) {
+                            if (chainExplorerUrl !== undefined)
+                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data?.deployTransaction as ethers.providers.TransactionResponse).hash}</a></div>;
+                            else
+                                return `Tx Hash: ${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`;
+                        }
+                    },
+                    error: {
+                        render({ data }) {
+                            return `${(data as any).message}`;
+                        }
+                    }
+                }
+            ).then((contract) => {
+                toast.promise(
+                    contract.deployTransaction.wait(),
+                    {
+                        pending: `Waiting for deployment...`,
+                        success: {
+                            render({ data }) {
+                                if (chainExplorerUrl !== undefined)
+                                    return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${(data?.contractAddress as string)}`} target="_blank" rel="noreferrer">{(data?.contractAddress as string)}</a></div>;
+                                else
+                                    return `Deployed Contract Address: ${(data?.contractAddress as string)}`;
+                            }
+                        },
+                        error: {
+                            render({ data }) {
+                                return `${(data as any).message}`;
+                            }
+                        }
+                    }
+                ).then((transactionReceipt) => {
+                    deployedAddress = transactionReceipt.contractAddress;
+                });
+            });
+
+            return deployedAddress;
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    }
+
+    const getERC20Name = async (address: string) => {
+        if (!await checkNetwork()) return;
+
+        if (address === "") {
+            toast.error("Address cannot be empty");
+            return;
+        }
+
+        try {
+            const contract = new ethers.Contract(address, ERC20.abi, signer);
+            const name = await contract.name();
+            toast.success(`Name: ${name}`);
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    }
+
+    const getERC20Symbol = async (address: string) => {
+        if (!await checkNetwork()) return;
+
+        if (address === "") {
+            toast.error("Address cannot be empty");
+            return;
+        }
+
+        try {
+            const contract = new ethers.Contract(address, ERC20.abi, signer);
+            const symbol = await contract.symbol();
+            toast.success(`Symbol: ${symbol}`);
         } catch (e) {
             console.error(e);
             toast.error(`${e}`);
@@ -527,6 +646,30 @@ export default function Governance() {
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
                 <summary>ERC20 Token Factory</summary>
+                <div className="ts-grid">
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Owner Address" id="erc20-deploy-owner" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Token Name" id="erc20-deploy-name" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Symbol" id="erc20-deploy-symbol" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Initial Supply" id="erc20-deploy-init-supply" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await deployERC20((document.getElementById("erc20-deploy-owner") as HTMLInputElement).value, (document.getElementById("erc20-deploy-name") as HTMLInputElement).value, (document.getElementById("erc20-deploy-symbol") as HTMLInputElement).value, (document.getElementById("erc20-deploy-init-supply") as HTMLInputElement).value)}>Deploy ERC20 Token</button>
+                </div>
+                <br></br>
+                <p>Testing</p>
+                <div className="ts-grid">
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Token Address" id="erc20-test-address" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await getERC20Name((document.getElementById("erc20-test-address") as HTMLInputElement).value)}>Get ERC20 Name</button>
+                    <button className="ts-button" onClick={async () => await getERC20Symbol((document.getElementById("erc20-test-address") as HTMLInputElement).value)}>Get ERC20 Symbol</button>
+                </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
