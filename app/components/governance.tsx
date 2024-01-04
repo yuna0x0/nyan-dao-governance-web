@@ -486,7 +486,7 @@ export default function Governance() {
                 ERC20_BYTECODE, signer);
             const tx = factory.deploy(owner, name, symbol, initSupply);
 
-            let deployedAddress = "";
+            let deployedAddress: string | undefined;
 
             await toast.promise(
                 tx,
@@ -506,8 +506,8 @@ export default function Governance() {
                         }
                     }
                 }
-            ).then((contract) => {
-                toast.promise(
+            ).then(async (contract) => {
+                await toast.promise(
                     contract.deployTransaction.wait(),
                     {
                         pending: `Waiting for deployment...`,
@@ -527,7 +527,11 @@ export default function Governance() {
                     }
                 ).then((transactionReceipt) => {
                     deployedAddress = transactionReceipt.contractAddress;
+                }, (e) => {
+                    console.error(e);
                 });
+            }, (e) => {
+                console.error(e);
             });
 
             return deployedAddress;
