@@ -1,11 +1,29 @@
 'use client';
-import { useSupportedChains, useConnectionStatus, useChainId, useChain, useSigner, useAddress, useSwitchChain } from "@thirdweb-dev/react";
-import { ethers } from "ethers";
+import {
+    useSupportedChains,
+    useConnectionStatus,
+    useChainId,
+    useChain,
+    useSigner,
+    useAddress,
+    useSwitchChain
+} from "@thirdweb-dev/react";
+import { ethers, BigNumber } from "ethers";
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { BaseGoerli } from "@thirdweb-dev/chains";
 import ozERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
-import { BASE_GOERLI_WETH_ADDRESS, ERC20_BYTECODE } from "../constants";
+import {
+    BASE_GOERLI_WETH_ADDRESS,
+    ERC20_BYTECODE,
+    ERC20_ABI,
+    OZ_TIMELOCK_BYTECODE,
+    OZ_TIMELOCK_ABI,
+    OZ_GOVERNOR_BYTECODE,
+    OZ_GOVERNOR_ABI,
+    STEWARD_SYSTEM_BYTECODE,
+    STEWARD_SYSTEM_ABI
+} from "../constants";
 
 export default function Governance() {
     //#region Init
@@ -479,11 +497,7 @@ export default function Governance() {
         }
 
         try {
-            const factory = new ethers.ContractFactory(
-                [
-                    "constructor(address initialOwner, string name, string symbol, uint256 initialSupply)"
-                ],
-                ERC20_BYTECODE, signer);
+            const factory = new ethers.ContractFactory(ERC20_ABI, ERC20_BYTECODE, signer);
             const tx = factory.deploy(owner, name, symbol, initSupply);
 
             let deployedAddress: string | undefined;
@@ -613,7 +627,7 @@ export default function Governance() {
                 try {
                     const contract = new ethers.Contract(address, ozERC20.abi, signer);
                     const totalSupply = await contract.totalSupply();
-                    toast.success(`Total Supply: ${totalSupply / (Math.pow(10, await contract.decimals()))} ${await contract.symbol()} (${totalSupply})`);
+                    toast.success(`Total Supply: ${totalSupply.div(BigNumber.from(10).pow(await contract.decimals()))} ${await contract.symbol()} (${totalSupply})`);
                 } catch (e) {
                     console.error(e);
                     toast.error(`${e}`);
@@ -622,6 +636,337 @@ export default function Governance() {
         }
     };
     //#endregion ERC20
+
+    //#region OpenZeppelin Governor Factory
+    const deployOZTimelock = async (minDelay: string, proposers: string, executors: string, admin: string) => {
+        if (!await checkNetwork()) return;
+
+        if (minDelay === "") {
+            toast.error("Minimum Delay cannot be empty");
+            return;
+        }
+
+        if (proposers === "") {
+            toast.error("Proposers cannot be empty");
+            return;
+        }
+
+        if (executors === "") {
+            toast.error("Executors cannot be empty");
+            return;
+        }
+
+        if (admin === "") {
+            toast.error("Admin cannot be empty");
+            return;
+        }
+
+        let proposersArray: string[] = [];
+        proposers.split(",").forEach((proposer) => {
+            proposersArray.push(proposer.trim());
+        });
+
+        let executorsArray: string[] = [];
+        executors.split(",").forEach((executor) => {
+            executorsArray.push(executor.trim());
+        });
+
+        try {
+            const factory = new ethers.ContractFactory(OZ_TIMELOCK_ABI, OZ_TIMELOCK_BYTECODE, signer);
+            const tx = factory.deploy(minDelay, proposersArray, executorsArray, admin);
+
+            let deployedAddress: string | undefined;
+
+            await toast.promise(
+                tx,
+                {
+                    pending: `Deploying OZ Timelock...`,
+                    success: {
+                        render({ data }) {
+                            if (chainExplorerUrl !== undefined)
+                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data?.deployTransaction as ethers.providers.TransactionResponse).hash}</a></div>;
+                            else
+                                return `Tx Hash: ${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`;
+                        }
+                    },
+                    error: {
+                        render({ data }) {
+                            return `${(data as any).message}`;
+                        }
+                    }
+                }
+            ).then(async (contract) => {
+                await toast.promise(
+                    contract.deployTransaction.wait(),
+                    {
+                        pending: `Waiting for deployment...`,
+                        success: {
+                            render({ data }) {
+                                if (chainExplorerUrl !== undefined)
+                                    return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${(data?.contractAddress as string)}`} target="_blank" rel="noreferrer">{(data?.contractAddress as string)}</a></div>;
+                                else
+                                    return `Deployed Contract Address: ${(data?.contractAddress as string)}`;
+                            }
+                        },
+                        error: {
+                            render({ data }) {
+                                return `${(data as any).message}`;
+                            }
+                        }
+                    }
+                ).then((transactionReceipt) => {
+                    deployedAddress = transactionReceipt.contractAddress;
+                }, (e) => {
+                    console.error(e);
+                });
+            }, (e) => {
+                console.error(e);
+            });
+
+            return deployedAddress;
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    };
+
+    const deployOZGovernor = async (tokenAddress: string, timelockAddress: string, governorName: string, votingDelayBlock: string, votingPeriodBlock: string, proposalThreshold: string, quorumNumerator: string) => {
+        if (!await checkNetwork()) return;
+
+        if (tokenAddress === "") {
+            toast.error("Token Address cannot be empty");
+            return;
+        }
+
+        if (timelockAddress === "") {
+            toast.error("Timelock Address cannot be empty");
+            return;
+        }
+
+        if (governorName === "") {
+            toast.error("Governor Name cannot be empty");
+            return;
+        }
+
+        if (votingDelayBlock === "") {
+            toast.error("Voting Delay Block cannot be empty");
+            return;
+        }
+
+        if (votingPeriodBlock === "") {
+            toast.error("Voting Period Block cannot be empty");
+            return;
+        }
+
+        if (proposalThreshold === "") {
+            toast.error("Proposal Threshold cannot be empty");
+            return;
+        }
+
+        if (quorumNumerator === "") {
+            toast.error("Quorum Numerator cannot be empty");
+            return;
+        }
+
+        try {
+            const factory = new ethers.ContractFactory(OZ_GOVERNOR_ABI, OZ_GOVERNOR_BYTECODE, signer);
+            const tx = factory.deploy(tokenAddress, timelockAddress, governorName, votingDelayBlock, votingPeriodBlock, proposalThreshold, quorumNumerator);
+
+            let deployedAddress: string | undefined;
+
+            await toast.promise(
+                tx,
+                {
+                    pending: `Deploying OZ Governor...`,
+                    success: {
+                        render({ data }) {
+                            if (chainExplorerUrl !== undefined)
+                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data?.deployTransaction as ethers.providers.TransactionResponse).hash}</a></div>;
+                            else
+                                return `Tx Hash: ${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`;
+                        }
+                    },
+                    error: {
+                        render({ data }) {
+                            return `${(data as any).message}`;
+                        }
+                    }
+                }
+            ).then(async (contract) => {
+                await toast.promise(
+                    contract.deployTransaction.wait(),
+                    {
+                        pending: `Waiting for deployment...`,
+                        success: {
+                            render({ data }) {
+                                if (chainExplorerUrl !== undefined)
+                                    return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${(data?.contractAddress as string)}`} target="_blank" rel="noreferrer">{(data?.contractAddress as string)}</a></div>;
+                                else
+                                    return `Deployed Contract Address: ${(data?.contractAddress as string)}`;
+                            }
+                        },
+                        error: {
+                            render({ data }) {
+                                return `${(data as any).message}`;
+                            }
+                        }
+                    }
+                ).then((transactionReceipt) => {
+                    deployedAddress = transactionReceipt.contractAddress;
+                }, (e) => {
+                    console.error(e);
+                });
+            }, (e) => {
+                console.error(e);
+            });
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    };
+
+
+    //#endregion OpenZeppelin Governor Factory
+
+    //#region OpenZeppelin Governor
+    const OZTimelock = {
+        getMinDelay: async (address: string) => {
+            {
+                if (!await checkNetwork()) return;
+
+                if (address === "") {
+                    toast.error("Address cannot be empty");
+                    return;
+                }
+
+                try {
+                    const contract = new ethers.Contract(address, OZ_TIMELOCK_ABI, signer);
+                    const minDelay = await contract.getMinDelay();
+                    toast.success(`Minimum Delay: ${minDelay}`);
+                } catch (e) {
+                    console.error(e);
+                    toast.error(`${e}`);
+                }
+            }
+        }
+    }
+
+    const OZGovernor = {
+        getName: async (address: string) => {
+            {
+                if (!await checkNetwork()) return;
+
+                if (address === "") {
+                    toast.error("Address cannot be empty");
+                    return;
+                }
+
+                try {
+                    const contract = new ethers.Contract(address, OZ_GOVERNOR_ABI, signer);
+                    const governorName = await contract.name();
+                    toast.success(`Governor Name: ${governorName}`);
+                } catch (e) {
+                    console.error(e);
+                    toast.error(`${e}`);
+                }
+            }
+        }
+    }
+    //#endregion OpenZeppelin Governor
+
+    //#region Steward System Factory
+    const deployStewardSystem = async (stewardAddresses: string, stewardExpireTimestamps: string, stewardProposalVoteDuration: string, owner: string) => {
+        if (!await checkNetwork()) return;
+
+        if (stewardAddresses === "") {
+            toast.error("Steward Addresses cannot be empty");
+            return;
+        }
+
+        if (stewardExpireTimestamps === "") {
+            toast.error("Steward Expire Timestamps cannot be empty");
+            return;
+        }
+
+        if (stewardProposalVoteDuration === "") {
+            toast.error("Steward Proposal Vote Duration cannot be empty");
+            return;
+        }
+
+        if (owner === "") {
+            toast.error("Owner cannot be empty");
+            return;
+        }
+
+        let stewardAddressesArray: string[] = [];
+        stewardAddresses.split(",").forEach((stewardAddress) => {
+            stewardAddressesArray.push(stewardAddress.trim());
+        });
+
+        let stewardExpireTimestampsArray: string[] = [];
+        stewardExpireTimestamps.split(",").forEach((stewardExpireTimestamp) => {
+            stewardExpireTimestampsArray.push(stewardExpireTimestamp.trim());
+        });
+
+        try {
+            const factory = new ethers.ContractFactory(STEWARD_SYSTEM_ABI, STEWARD_SYSTEM_BYTECODE, signer);
+            const tx = factory.deploy(stewardAddressesArray, stewardExpireTimestampsArray, stewardProposalVoteDuration, owner);
+
+            let deployedAddress: string | undefined;
+
+            await toast.promise(
+                tx,
+                {
+                    pending: `Deploying Steward System...`,
+                    success: {
+                        render({ data }) {
+                            if (chainExplorerUrl !== undefined)
+                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data?.deployTransaction as ethers.providers.TransactionResponse).hash}</a></div>;
+                            else
+                                return `Tx Hash: ${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`;
+                        }
+                    },
+                    error: {
+                        render({ data }) {
+                            return `${(data as any).message}`;
+                        }
+                    }
+                }
+            ).then(async (contract) => {
+                await toast.promise(
+                    contract.deployTransaction.wait(),
+                    {
+                        pending: `Waiting for deployment...`,
+                        success: {
+                            render({ data }) {
+                                if (chainExplorerUrl !== undefined)
+                                    return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${(data?.contractAddress as string)}`} target="_blank" rel="noreferrer">{(data?.contractAddress as string)}</a></div>;
+                                else
+                                    return `Deployed Contract Address: ${(data?.contractAddress as string)}`;
+                            }
+                        },
+                        error: {
+                            render({ data }) {
+                                return `${(data as any).message}`;
+                            }
+                        }
+                    }
+                ).then((transactionReceipt) => {
+                    deployedAddress = transactionReceipt.contractAddress;
+                }, (e) => {
+                    console.error(e);
+                });
+            }, (e) => {
+                console.error(e);
+            });
+
+            return deployedAddress;
+        } catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    }
+    //#endregion Steward System Factory
 
     return (
         <div>
@@ -737,6 +1082,61 @@ export default function Governance() {
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
                 <summary>OpenZeppelin Governor Factory</summary>
+                <div className="ts-grid">
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Minimum Delay" id="oz-timelock-deploy-min-delay" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Proposers" id="oz-timelock-deploy-proposers" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Executors" id="oz-timelock-deploy-executors" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Admin" id="oz-timelock-deploy-admin" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await deployOZTimelock((document.getElementById("oz-timelock-deploy-min-delay") as HTMLInputElement).value, (document.getElementById("oz-timelock-deploy-proposers") as HTMLInputElement).value, (document.getElementById("oz-timelock-deploy-executors") as HTMLInputElement).value, (document.getElementById("oz-timelock-deploy-admin") as HTMLInputElement).value)}>Deploy OZ Timelock</button>
+                </div>
+                <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Token Address" id="oz-governor-deploy-token-address" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Timelock Address" id="oz-governor-deploy-timelock-address" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Governor Name" id="oz-governor-deploy-governor-name" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Voting Delay Block" id="oz-governor-deploy-voting-delay-block" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Voting Period Block" id="oz-governor-deploy-voting-period-block" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Proposal Threshold" id="oz-governor-deploy-proposal-threshold" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Quorum Numerator" id="oz-governor-deploy-quorum-numerator" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await deployOZGovernor((document.getElementById("oz-governor-deploy-token-address") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-timelock-address") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-governor-name") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-voting-delay-block") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-voting-period-block") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-proposal-threshold") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-quorum-numerator") as HTMLInputElement).value)}>Deploy OZ Governor</button>
+                </div>
+                <br></br>
+                <p>Testing</p>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Timelock Address" id="oz-timelock-test-address" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await OZTimelock.getMinDelay((document.getElementById("oz-timelock-test-address") as HTMLInputElement).value)}>Get OZ Timelock Minimum Delay</button>
+                </div>
+                <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Governor Address" id="oz-governor-test-address" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await OZGovernor.getName((document.getElementById("oz-governor-test-address") as HTMLInputElement).value)}>Get OZ Governor Name</button>
+                </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
@@ -749,6 +1149,21 @@ export default function Governance() {
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
                 <summary>Founder Features</summary>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Steward Addresses" id="founder-features-steward-addresses" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Steward Expire Timestamps" id="founder-features-steward-expire-timestamps" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Steward Proposal Vote Duration" id="founder-features-steward-proposal-vote-duration" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Steward System Owner" id="founder-features-steward-owner" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await deployStewardSystem((document.getElementById("founder-features-steward-addresses") as HTMLInputElement).value, (document.getElementById("founder-features-steward-expire-timestamps") as HTMLInputElement).value, (document.getElementById("founder-features-steward-proposal-vote-duration") as HTMLInputElement).value, (document.getElementById("founder-features-steward-owner") as HTMLInputElement).value)}>Deploy Steward System</button>
+                </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">

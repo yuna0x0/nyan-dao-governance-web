@@ -17,7 +17,7 @@ import {
     ConnectWallet,
     darkTheme
 } from "@thirdweb-dev/react";
-import { BaseGoerli, Localhost } from "@thirdweb-dev/chains";
+import { BaseGoerli } from "@thirdweb-dev/chains";
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
@@ -26,10 +26,25 @@ import { dAppName } from './constants';
 import Governance from "./components/governance";
 
 export default function Home() {
+    const localhostChain = {
+        chain: "ETH",
+        chainId: 31337,
+        name: "Localhost",
+        nativeCurrency: {
+            name: "Ether",
+            symbol: "ETH",
+            decimals: 18,
+        },
+        rpc: ["http://localhost:8545"],
+        shortName: "local",
+        slug: "localhost",
+        testnet: true
+    }
+
     return (
         <ThirdwebProvider
             clientId={process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID}
-            supportedChains={[BaseGoerli, Localhost]}
+            supportedChains={[BaseGoerli, localhostChain]}
             supportedWallets={[
                 metamaskWallet({ recommended: true }),
                 coinbaseWallet(),
