@@ -874,6 +874,72 @@ export default function Governance() {
     }
     //#endregion OpenZeppelin Governor
 
+    //#region DAO Deployment
+    const deployDAO = async (timelockMinDelay: string, tokenOwner: string, tokenName: string, tokenSymbol: string, governorName: string, governorVotingDelayBlock: string, governorVotingPeriodBlock: string, governorProposalThreshold: string, governorQuorumNumerator: string) => {
+        try {
+            const deployerAddress = await signer?.getAddress();
+
+            const DAOTimelock = new ethers.ContractFactory(OZ_TIMELOCK_ABI, OZ_TIMELOCK_BYTECODE, signer);
+            const DAOToken = new ethers.ContractFactory(ERC20_ABI, ERC20_BYTECODE, signer);
+            const DAOGovernor = new ethers.ContractFactory(OZ_GOVERNOR_ABI, OZ_GOVERNOR_BYTECODE, signer);
+
+            const daoTimelock = await DAOTimelock.deploy(
+                timelockMinDelay, // Delay in seconds
+                [deployerAddress], // Proposer
+                [deployerAddress], // Executor
+                deployerAddress // Admin
+            );
+            const daoTimelockTransactionReceipt = await daoTimelock.deployTransaction.wait();
+            const daoTimelockAddress = daoTimelockTransactionReceipt.contractAddress;
+
+            const daoToken = await DAOToken.deploy(
+                tokenOwner, // Owner
+                tokenName, // Token Name
+                tokenSymbol, // Token Symbol
+                ethers.utils.parseEther("0") // Initial Supply
+            );
+            const daoTokenTransactionReceipt = await daoToken.deployTransaction.wait();
+            const daoTokenAddress = daoTokenTransactionReceipt.contractAddress;
+
+            const daoGovernor = await DAOGovernor.deploy(
+                daoTokenAddress, // Token
+                daoTimelockAddress, // Timelock
+                governorName, // Governor Name
+                governorVotingDelayBlock, // Voting Delay Block
+                governorVotingPeriodBlock, // Voting Period Block
+                governorProposalThreshold, // Proposal Threshold
+                governorQuorumNumerator // Quorum Numerator
+            );
+            const daoGovernorTransactionReceipt = await daoGovernor.deployTransaction.wait();
+            const daoGovernorAddress = daoGovernorTransactionReceipt.contractAddress;
+
+            // Grant role "PROPOSER_ROLE" to governor
+            await daoTimelock.grantRole("0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1", daoGovernorAddress);
+
+            // Grant role "CANCELLER_ROLE" to governor
+            await daoTimelock.grantRole("0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783", daoGovernorAddress);
+
+            // Grant role "EXECUTOR_ROLE" to governor
+            await daoTimelock.grantRole("0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63", daoGovernorAddress);
+
+            // Renounce role "PROPOSER_ROLE" from deployer
+            await daoTimelock.renounceRole("0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1", deployerAddress);
+
+            // Renounce role "CANCELLER_ROLE" from deployer
+            await daoTimelock.renounceRole("0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783", deployerAddress);
+
+            // Renounce role "EXECUTOR_ROLE" from deployer
+            await daoTimelock.renounceRole("0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63", deployerAddress);
+
+            // Renounce role "TIMELOCK_ADMIN_ROLE" from deployer
+            await daoTimelock.renounceRole("0x5f58e3a2316349923ce3780f8d587db2d72378aed66a8261c916544fa6846ca5", deployerAddress);
+        }
+        catch (e) {
+            console.error(e);
+            toast.error(`${e}`);
+        }
+    };
+
     //#region Steward System Factory
     const deployStewardSystem = async (stewardAddresses: string, stewardExpireTimestamps: string, stewardProposalVoteDuration: string, owner: string) => {
         if (!await checkNetwork()) return;
@@ -1136,6 +1202,40 @@ export default function Governance() {
                         <input type="text" placeholder="Governor Address" id="oz-governor-test-address" />
                     </div>
                     <button className="ts-button" onClick={async () => await OZGovernor.getName((document.getElementById("oz-governor-test-address") as HTMLInputElement).value)}>Get OZ Governor Name</button>
+                </div>
+            </details>
+            <div className="ts-divider has-vertically-spaced"></div>
+            <details className="ts-accordion">
+                <summary>DAO Deployment</summary>
+                <div className="ts-grid">
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Min Delay" id="dao-deploy-min-delay" />
+                    </div>
+                    <div className="ts-input column is-7-wide">
+                        <input type="text" placeholder="Token Owner" id="dao-deploy-token-owner" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Token Name" id="dao-deploy-token-name" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Token Symbol" id="dao-deploy-token-symbol" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Governor Name" id="dao-deploy-governor-name" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Governor Voting Delay Block" id="dao-deploy-governor-voting-delay-block" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Governor Voting Period Block" id="dao-deploy-governor-voting-period-block" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Governor Proposal Threshold" id="dao-deploy-governor-proposal-threshold" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Governor Quorum Numerator" id="dao-deploy-governor-quorum-numerator" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await deployDAO((document.getElementById("dao-deploy-min-delay") as HTMLInputElement).value, (document.getElementById("dao-deploy-token-owner") as HTMLInputElement).value, (document.getElementById("dao-deploy-token-name") as HTMLInputElement).value, (document.getElementById("dao-deploy-token-symbol") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-name") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-voting-delay-block") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-voting-period-block") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-proposal-threshold") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-quorum-numerator") as HTMLInputElement).value)}>Deploy DAO</button>
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
