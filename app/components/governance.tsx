@@ -1613,7 +1613,7 @@ export default function Governance() {
                 <div className="has-vertically-spaced"></div>
                 <div className="ts-grid">
                     <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Owner Addresses" id="safe-deployment-owner-addresses" />
+                        <input type="text" placeholder="Owner Addresses (use &quot;,&quot; to split address)" id="safe-deployment-owner-addresses" />
                     </div>
                     <div className="ts-input column is-2-wide">
                         <input type="text" placeholder="Threshold" id="safe-deployment-owner-threshold" />
@@ -1634,16 +1634,16 @@ export default function Governance() {
                 <summary><strong>Founder Features</strong></summary>
                 <div className="ts-grid">
                     <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Steward Addresses" id="founder-features-steward-addresses" />
+                        <input type="text" placeholder="Steward Addresses (use &quot;,&quot; to split address)" id="founder-features-steward-addresses" />
                     </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Steward Expire Timestamps" id="founder-features-steward-expire-timestamps" />
+                    <div className="ts-input column is-6-wide">
+                        <input type="text" placeholder="Steward Expire Timestamps (use &quot;,&quot; to split timestamp)" id="founder-features-steward-expire-timestamps" />
                     </div>
                     <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="Steward Proposal Vote Duration (in seconds)" id="founder-features-steward-proposal-vote-duration" />
                     </div>
                     <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Steward System Owner" id="founder-features-steward-owner" />
+                        <input type="text" placeholder="Steward System Owner Address" id="founder-features-steward-owner" />
                     </div>
                     <button className="ts-button" onClick={async () => await StewardSystem.deploy((document.getElementById("founder-features-steward-addresses") as HTMLInputElement).value, (document.getElementById("founder-features-steward-expire-timestamps") as HTMLInputElement).value, (document.getElementById("founder-features-steward-proposal-vote-duration") as HTMLInputElement).value, (document.getElementById("founder-features-steward-owner") as HTMLInputElement).value)}>Deploy Steward System</button>
                 </div>
