@@ -472,6 +472,56 @@ export default function Governance() {
     }
     //#endregion WETH
 
+    //#region Toast Callback
+    const toastSuccessTx = (data: ethers.providers.TransactionResponse) => {
+        if (chainExplorerUrl !== undefined)
+            return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${data.hash}`} target="_blank" rel="noreferrer">{data.hash}</a></div>;
+        else
+            return `Tx Hash: ${data.hash}`;
+    }
+
+    const toastSuccessContractDeployTx = (data: ethers.Contract) => {
+        if (chainExplorerUrl !== undefined)
+            return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${data.deployTransaction.hash}`} target="_blank" rel="noreferrer">{data.deployTransaction.hash}</a></div>;
+        else
+            return `Tx Hash: ${data.deployTransaction.hash}`;
+    }
+
+    const toastSuccessContractDeployed = (data: ethers.providers.TransactionReceipt) => {
+        if (chainExplorerUrl !== undefined)
+            return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${data.contractAddress}`} target="_blank" rel="noreferrer">{data.contractAddress}</a></div>;
+        else
+            return `Deployed Contract Address: ${data.contractAddress}`;
+    }
+
+    const toastSuccessDaoDeployed = (daoTimelockAddress: string, daoTokenAddress: string, daoGovernorAddress: string) => {
+        if (chainExplorerUrl !== undefined)
+            return (
+                <div>
+                    <p>DAO deployed successfully.</p>
+                    <br></br>
+                    <div>DAO Timelock Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${daoTimelockAddress}`} target="_blank" rel="noreferrer">{daoTimelockAddress}</a></div>
+                    <br></br>
+                    <div>DAO Token Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${daoTokenAddress}`} target="_blank" rel="noreferrer">{daoTokenAddress}</a></div>
+                    <br></br>
+                    <div>DAO Governor Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${daoGovernorAddress}`} target="_blank" rel="noreferrer">{daoGovernorAddress}</a></div>
+                </div>
+            );
+        else
+            return (
+                <div>
+                    <p>DAO deployed successfully.</p>
+                    <br></br>
+                    <div>DAO Timelock Address: {daoTimelockAddress}</div>
+                    <br></br>
+                    <div>DAO Token Address: {daoTokenAddress}</div>
+                    <br></br>
+                    <div>DAO Governor Address: {daoGovernorAddress}</div>
+                </div>
+            );
+    }
+    //#endregion Toast Callback
+
     //#region ERC20 Factory
     const deployERC20 = async (owner: string, name: string, symbol: string, initSupply: string) => {
         if (!await checkNetwork()) return;
@@ -508,10 +558,7 @@ export default function Governance() {
                     pending: `Deploying ERC20 Token...`,
                     success: {
                         render({ data }) {
-                            if (chainExplorerUrl !== undefined)
-                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data?.deployTransaction as ethers.providers.TransactionResponse).hash}</a></div>;
-                            else
-                                return `Tx Hash: ${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`;
+                            return toastSuccessContractDeployTx(data);
                         }
                     },
                     error: {
@@ -527,10 +574,7 @@ export default function Governance() {
                         pending: `Waiting for deployment...`,
                         success: {
                             render({ data }) {
-                                if (chainExplorerUrl !== undefined)
-                                    return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${(data?.contractAddress as string)}`} target="_blank" rel="noreferrer">{(data?.contractAddress as string)}</a></div>;
-                                else
-                                    return `Deployed Contract Address: ${(data?.contractAddress as string)}`;
+                                return toastSuccessContractDeployed(data);
                             }
                         },
                         error: {
@@ -683,10 +727,7 @@ export default function Governance() {
                     pending: `Deploying OZ Timelock...`,
                     success: {
                         render({ data }) {
-                            if (chainExplorerUrl !== undefined)
-                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data?.deployTransaction as ethers.providers.TransactionResponse).hash}</a></div>;
-                            else
-                                return `Tx Hash: ${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`;
+                            return toastSuccessContractDeployTx(data);
                         }
                     },
                     error: {
@@ -702,10 +743,7 @@ export default function Governance() {
                         pending: `Waiting for deployment...`,
                         success: {
                             render({ data }) {
-                                if (chainExplorerUrl !== undefined)
-                                    return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${(data?.contractAddress as string)}`} target="_blank" rel="noreferrer">{(data?.contractAddress as string)}</a></div>;
-                                else
-                                    return `Deployed Contract Address: ${(data?.contractAddress as string)}`;
+                                return toastSuccessContractDeployed(data);
                             }
                         },
                         error: {
@@ -780,10 +818,7 @@ export default function Governance() {
                     pending: `Deploying OZ Governor...`,
                     success: {
                         render({ data }) {
-                            if (chainExplorerUrl !== undefined)
-                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data?.deployTransaction as ethers.providers.TransactionResponse).hash}</a></div>;
-                            else
-                                return `Tx Hash: ${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`;
+                            return toastSuccessContractDeployTx(data);
                         }
                     },
                     error: {
@@ -799,10 +834,7 @@ export default function Governance() {
                         pending: `Waiting for deployment...`,
                         success: {
                             render({ data }) {
-                                if (chainExplorerUrl !== undefined)
-                                    return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${(data?.contractAddress as string)}`} target="_blank" rel="noreferrer">{(data?.contractAddress as string)}</a></div>;
-                                else
-                                    return `Deployed Contract Address: ${(data?.contractAddress as string)}`;
+                                return toastSuccessContractDeployed(data);
                             }
                         },
                         error: {
@@ -819,6 +851,8 @@ export default function Governance() {
             }, (e) => {
                 console.error(e);
             });
+
+            return deployedAddress;
         } catch (e) {
             console.error(e);
             toast.error(`${e}`);
@@ -877,68 +911,221 @@ export default function Governance() {
     //#region DAO Deployment
     const deployDAO = async (timelockMinDelay: string, tokenOwner: string, tokenName: string, tokenSymbol: string, governorName: string, governorVotingDelayBlock: string, governorVotingPeriodBlock: string, governorProposalThreshold: string, governorQuorumNumerator: string) => {
         try {
-            const deployerAddress = await signer?.getAddress();
+            const deployerAddress = await signer!.getAddress();
 
             const DAOTimelock = new ethers.ContractFactory(OZ_TIMELOCK_ABI, OZ_TIMELOCK_BYTECODE, signer);
-            const DAOToken = new ethers.ContractFactory(ERC20_ABI, ERC20_BYTECODE, signer);
-            const DAOGovernor = new ethers.ContractFactory(OZ_GOVERNOR_ABI, OZ_GOVERNOR_BYTECODE, signer);
+            // const DAOToken = new ethers.ContractFactory(ERC20_ABI, ERC20_BYTECODE, signer);
+            // const DAOGovernor = new ethers.ContractFactory(OZ_GOVERNOR_ABI, OZ_GOVERNOR_BYTECODE, signer);
 
-            const daoTimelock = await DAOTimelock.deploy(
-                timelockMinDelay, // Delay in seconds
-                [deployerAddress], // Proposer
-                [deployerAddress], // Executor
-                deployerAddress // Admin
-            );
-            const daoTimelockTransactionReceipt = await daoTimelock.deployTransaction.wait();
-            const daoTimelockAddress = daoTimelockTransactionReceipt.contractAddress;
+            const daoTimelockAddress = await deployOZTimelock(timelockMinDelay, deployerAddress, deployerAddress, deployerAddress);
+            if (daoTimelockAddress === undefined) {
+                toast.error("Error: DAO Timelock deployment failed");
+                return;
+            }
+            const daoTimelock = DAOTimelock.attach(daoTimelockAddress);
 
-            const daoToken = await DAOToken.deploy(
-                tokenOwner, // Owner
-                tokenName, // Token Name
-                tokenSymbol, // Token Symbol
-                ethers.utils.parseEther("0") // Initial Supply
-            );
-            const daoTokenTransactionReceipt = await daoToken.deployTransaction.wait();
-            const daoTokenAddress = daoTokenTransactionReceipt.contractAddress;
+            let daoTokenAddress;
+            if (tokenOwner === "Timelock")
+                daoTokenAddress = await deployERC20(daoTimelockAddress, tokenName, tokenSymbol, "0");
+            else
+                daoTokenAddress = await deployERC20(tokenOwner, tokenName, tokenSymbol, "0");
 
-            const daoGovernor = await DAOGovernor.deploy(
-                daoTokenAddress, // Token
-                daoTimelockAddress, // Timelock
-                governorName, // Governor Name
-                governorVotingDelayBlock, // Voting Delay Block
-                governorVotingPeriodBlock, // Voting Period Block
-                governorProposalThreshold, // Proposal Threshold
-                governorQuorumNumerator // Quorum Numerator
-            );
-            const daoGovernorTransactionReceipt = await daoGovernor.deployTransaction.wait();
-            const daoGovernorAddress = daoGovernorTransactionReceipt.contractAddress;
+            if (daoTokenAddress === undefined) {
+                toast.error("Error: DAO Token deployment failed");
+                return;
+            }
+            // const daoToken = DAOToken.attach(daoTokenAddress!);
 
-            // Grant role "PROPOSER_ROLE" to governor
-            await daoTimelock.grantRole("0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1", daoGovernorAddress);
+            const daoGovernorAddress = await deployOZGovernor(daoTokenAddress, daoTimelockAddress, governorName, governorVotingDelayBlock, governorVotingPeriodBlock, governorProposalThreshold, governorQuorumNumerator);
+            if (daoGovernorAddress === undefined) {
+                toast.error("Error: DAO Governor deployment failed");
+                return;
+            }
+            // const daoGovernor = DAOGovernor.attach(daoGovernorAddress!);
 
-            // Grant role "CANCELLER_ROLE" to governor
-            await daoTimelock.grantRole("0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783", daoGovernorAddress);
+            // Grant timelock role "PROPOSER_ROLE" to governor
+            await toast.promise(
+                daoTimelock.grantRole("0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1", daoGovernorAddress),
+                {
+                    pending: `Granting timelock role "PROPOSER_ROLE" to governor...`,
+                    success: {
+                        render({ data }) {
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                        }
+                    }
+                }
+            ).then(async (tx) => {
+                await toast.promise(
+                    (tx as ethers.providers.TransactionResponse).wait(),
+                    {
+                        pending: `Waiting for transaction...`,
+                        success: "Transaction confirmed"
+                    }
+                ).catch((e) => {
+                    throw e;
+                });
+            }, (e) => {
+                throw e;
+            });
 
-            // Grant role "EXECUTOR_ROLE" to governor
-            await daoTimelock.grantRole("0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63", daoGovernorAddress);
+            // Grant timelock role "CANCELLER_ROLE" to governor
+            await toast.promise(
+                daoTimelock.grantRole("0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783", daoGovernorAddress),
+                {
+                    pending: `Grant timelock role "CANCELLER_ROLE" to governor...`,
+                    success: {
+                        render({ data }) {
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                        }
+                    }
+                }
+            ).then(async (tx) => {
+                await toast.promise(
+                    (tx as ethers.providers.TransactionResponse).wait(),
+                    {
+                        pending: `Waiting for transaction...`,
+                        success: "Transaction confirmed"
+                    }
+                ).catch((e) => {
+                    throw e;
+                });
+            }, (e) => {
+                throw e;
+            });
 
-            // Renounce role "PROPOSER_ROLE" from deployer
-            await daoTimelock.renounceRole("0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1", deployerAddress);
+            // Grant timelock role "EXECUTOR_ROLE" to governor
+            await toast.promise(
+                daoTimelock.grantRole("0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63", daoGovernorAddress),
+                {
+                    pending: `Grant timelock role "EXECUTOR_ROLE" to governor...`,
+                    success: {
+                        render({ data }) {
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                        }
+                    }
+                }
+            ).then(async (tx) => {
+                await toast.promise(
+                    (tx as ethers.providers.TransactionResponse).wait(),
+                    {
+                        pending: `Waiting for transaction...`,
+                        success: "Transaction confirmed"
+                    }
+                ).catch((e) => {
+                    throw e;
+                });
+            }, (e) => {
+                throw e;
+            });
 
-            // Renounce role "CANCELLER_ROLE" from deployer
-            await daoTimelock.renounceRole("0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783", deployerAddress);
+            // Renounce timelock role "PROPOSER_ROLE" from deployer
+            await toast.promise(
+                daoTimelock.renounceRole("0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1", deployerAddress),
+                {
+                    pending: `Renounce timelock role "PROPOSER_ROLE" from deployer...`,
+                    success: {
+                        render({ data }) {
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                        }
+                    }
+                }
+            ).then(async (tx) => {
+                await toast.promise(
+                    (tx as ethers.providers.TransactionResponse).wait(),
+                    {
+                        pending: `Waiting for transaction...`,
+                        success: "Transaction confirmed"
+                    }
+                ).catch((e) => {
+                    throw e;
+                });
+            }, (e) => {
+                throw e;
+            });
 
-            // Renounce role "EXECUTOR_ROLE" from deployer
-            await daoTimelock.renounceRole("0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63", deployerAddress);
+            // Renounce timelock role "CANCELLER_ROLE" from deployer
+            await toast.promise(
+                daoTimelock.renounceRole("0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783", deployerAddress),
+                {
+                    pending: `Renounce timelock role "CANCELLER_ROLE" from deployer...`,
+                    success: {
+                        render({ data }) {
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                        }
+                    }
+                }
+            ).then(async (tx) => {
+                await toast.promise(
+                    (tx as ethers.providers.TransactionResponse).wait(),
+                    {
+                        pending: `Waiting for transaction...`,
+                        success: "Transaction confirmed"
+                    }
+                ).catch((e) => {
+                    throw e;
+                });
+            }, (e) => {
+                throw e;
+            });
 
-            // Renounce role "TIMELOCK_ADMIN_ROLE" from deployer
-            await daoTimelock.renounceRole("0x5f58e3a2316349923ce3780f8d587db2d72378aed66a8261c916544fa6846ca5", deployerAddress);
+            // Renounce timelock role "EXECUTOR_ROLE" from deployer
+            await toast.promise(
+                daoTimelock.renounceRole("0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63", deployerAddress),
+                {
+                    pending: `Renounce timelock role "EXECUTOR_ROLE" from deployer...`,
+                    success: {
+                        render({ data }) {
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                        }
+                    }
+                }
+            ).then(async (tx) => {
+                await toast.promise(
+                    (tx as ethers.providers.TransactionResponse).wait(),
+                    {
+                        pending: `Waiting for transaction...`,
+                        success: "Transaction confirmed"
+                    }
+                ).catch((e) => {
+                    throw e;
+                });
+            }, (e) => {
+                throw e;
+            });
+
+            // Renounce timelock role "TIMELOCK_ADMIN_ROLE" from deployer
+            await toast.promise(
+                daoTimelock.renounceRole("0x5f58e3a2316349923ce3780f8d587db2d72378aed66a8261c916544fa6846ca5", deployerAddress),
+                {
+                    pending: `Renounce timelock role "TIMELOCK_ADMIN_ROLE" from deployer...`,
+                    success: {
+                        render({ data }) {
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                        }
+                    }
+                }
+            ).then(async (tx) => {
+                await toast.promise(
+                    (tx as ethers.providers.TransactionResponse).wait(),
+                    {
+                        pending: `Waiting for transaction...`,
+                        success: "Transaction confirmed"
+                    }
+                ).catch((e) => {
+                    throw e;
+                });
+            }, (e) => {
+                throw e;
+            });
+
+            toast.success(toastSuccessDaoDeployed(daoTimelockAddress, daoTokenAddress, daoGovernorAddress));
         }
         catch (e) {
             console.error(e);
             toast.error(`${e}`);
         }
     };
+    //#endregion DAO Deployment
 
     //#region Steward System Factory
     const deployStewardSystem = async (stewardAddresses: string, stewardExpireTimestamps: string, stewardProposalVoteDuration: string, owner: string) => {
@@ -986,10 +1173,7 @@ export default function Governance() {
                     pending: `Deploying Steward System...`,
                     success: {
                         render({ data }) {
-                            if (chainExplorerUrl !== undefined)
-                                return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`} target="_blank" rel="noreferrer">{(data?.deployTransaction as ethers.providers.TransactionResponse).hash}</a></div>;
-                            else
-                                return `Tx Hash: ${(data?.deployTransaction as ethers.providers.TransactionResponse).hash}`;
+                            return toastSuccessContractDeployTx(data);
                         }
                     },
                     error: {
@@ -1005,10 +1189,7 @@ export default function Governance() {
                         pending: `Waiting for deployment...`,
                         success: {
                             render({ data }) {
-                                if (chainExplorerUrl !== undefined)
-                                    return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${(data?.contractAddress as string)}`} target="_blank" rel="noreferrer">{(data?.contractAddress as string)}</a></div>;
-                                else
-                                    return `Deployed Contract Address: ${(data?.contractAddress as string)}`;
+                                return toastSuccessContractDeployed(data);
                             }
                         },
                         error: {
@@ -1149,8 +1330,8 @@ export default function Governance() {
             <details className="ts-accordion">
                 <summary>OpenZeppelin Governor Factory</summary>
                 <div className="ts-grid">
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Minimum Delay" id="oz-timelock-deploy-min-delay" />
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Minimum Delay (in seconds)" id="oz-timelock-deploy-min-delay" />
                     </div>
                     <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="Proposers" id="oz-timelock-deploy-proposers" />
@@ -1175,16 +1356,16 @@ export default function Governance() {
                         <input type="text" placeholder="Governor Name" id="oz-governor-deploy-governor-name" />
                     </div>
                     <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Voting Delay Block" id="oz-governor-deploy-voting-delay-block" />
+                        <input type="text" placeholder="Voting Delay (in blocks)" id="oz-governor-deploy-voting-delay-block" />
                     </div>
                     <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Voting Period Block" id="oz-governor-deploy-voting-period-block" />
+                        <input type="text" placeholder="Voting Period (in blocks)" id="oz-governor-deploy-voting-period-block" />
                     </div>
                     <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Proposal Threshold" id="oz-governor-deploy-proposal-threshold" />
                     </div>
                     <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Quorum Numerator" id="oz-governor-deploy-quorum-numerator" />
+                        <input type="text" placeholder="Quorum Numerator (%)" id="oz-governor-deploy-quorum-numerator" />
                     </div>
                     <button className="ts-button" onClick={async () => await deployOZGovernor((document.getElementById("oz-governor-deploy-token-address") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-timelock-address") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-governor-name") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-voting-delay-block") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-voting-period-block") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-proposal-threshold") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-quorum-numerator") as HTMLInputElement).value)}>Deploy OZ Governor</button>
                 </div>
@@ -1206,13 +1387,17 @@ export default function Governance() {
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
-                <summary>DAO Deployment</summary>
-                <div className="ts-grid">
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Min Delay" id="dao-deploy-min-delay" />
+                <summary><strong>DAO Deployment</strong></summary>
+                <p>Timelock</p>
+                <div className="ts-grid has-vertically-spaced">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Timelock Min Delay (in seconds)" id="dao-deploy-timelock-min-delay" />
                     </div>
+                </div>
+                <p>Token</p>
+                <div className="ts-grid has-vertically-spaced">
                     <div className="ts-input column is-7-wide">
-                        <input type="text" placeholder="Token Owner" id="dao-deploy-token-owner" />
+                        <input type="text" placeholder="Token Owner (or &quot;Timelock&quot; for deployed timelock)" id="dao-deploy-token-owner" />
                     </div>
                     <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Token Name" id="dao-deploy-token-name" />
@@ -1220,24 +1405,29 @@ export default function Governance() {
                     <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Token Symbol" id="dao-deploy-token-symbol" />
                     </div>
-                    <div className="ts-input column is-3-wide">
+                </div>
+                <p>Governor</p>
+                <div className="ts-grid has-vertically-spaced">
+                    <div className="ts-input column is-4-wide">
                         <input type="text" placeholder="Governor Name" id="dao-deploy-governor-name" />
                     </div>
                     <div className="ts-input column is-4-wide">
-                        <input type="text" placeholder="Governor Voting Delay Block" id="dao-deploy-governor-voting-delay-block" />
+                        <input type="text" placeholder="Governor Voting Delay (in blocks)" id="dao-deploy-governor-voting-delay-block" />
                     </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Governor Voting Period Block" id="dao-deploy-governor-voting-period-block" />
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Governor Voting Period (in blocks)" id="dao-deploy-governor-voting-period-block" />
                     </div>
                     <div className="ts-input column is-4-wide">
                         <input type="text" placeholder="Governor Proposal Threshold" id="dao-deploy-governor-proposal-threshold" />
                     </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Governor Quorum Numerator" id="dao-deploy-governor-quorum-numerator" />
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Governor Quorum Numerator (%)" id="dao-deploy-governor-quorum-numerator" />
                     </div>
-                    <button className="ts-button" onClick={async () => await deployDAO((document.getElementById("dao-deploy-min-delay") as HTMLInputElement).value, (document.getElementById("dao-deploy-token-owner") as HTMLInputElement).value, (document.getElementById("dao-deploy-token-name") as HTMLInputElement).value, (document.getElementById("dao-deploy-token-symbol") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-name") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-voting-delay-block") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-voting-period-block") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-proposal-threshold") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-quorum-numerator") as HTMLInputElement).value)}>Deploy DAO</button>
                 </div>
-            </details>
+                <div className="ts-grid">
+                    <button className="ts-button" onClick={async () => await deployDAO((document.getElementById("dao-deploy-timelock-min-delay") as HTMLInputElement).value, (document.getElementById("dao-deploy-token-owner") as HTMLInputElement).value, (document.getElementById("dao-deploy-token-name") as HTMLInputElement).value, (document.getElementById("dao-deploy-token-symbol") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-name") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-voting-delay-block") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-voting-period-block") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-proposal-threshold") as HTMLInputElement).value, (document.getElementById("dao-deploy-governor-quorum-numerator") as HTMLInputElement).value)}>Deploy DAO</button>
+                </div>
+            </details >
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
                 <summary>DAO Token (ERC20)</summary>
@@ -1248,7 +1438,7 @@ export default function Governance() {
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
-                <summary>Founder Features</summary>
+                <summary><strong>Founder Features</strong></summary>
                 <div className="ts-grid">
                     <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="Steward Addresses" id="founder-features-steward-addresses" />
@@ -1257,7 +1447,7 @@ export default function Governance() {
                         <input type="text" placeholder="Steward Expire Timestamps" id="founder-features-steward-expire-timestamps" />
                     </div>
                     <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Steward Proposal Vote Duration" id="founder-features-steward-proposal-vote-duration" />
+                        <input type="text" placeholder="Steward Proposal Vote Duration (in seconds)" id="founder-features-steward-proposal-vote-duration" />
                     </div>
                     <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="Steward System Owner" id="founder-features-steward-owner" />
@@ -1267,16 +1457,16 @@ export default function Governance() {
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
-                <summary>Steward Features</summary>
+                <summary><strong>Steward Features</strong></summary>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
-                <summary>Working Group Features</summary>
+                <summary><strong>Working Group Features</strong></summary>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion">
-                <summary>Token Holder Features</summary>
+                <summary><strong>Token Holder Features</strong></summary>
             </details>
-        </div>
+        </div >
     );
 }

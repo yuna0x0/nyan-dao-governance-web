@@ -124,8 +124,7 @@ export default function Home() {
                     </div>
                 </div>
                 <ToastContainer
-                    closeOnClick={false}
-                    draggable={false}
+                    newestOnTop
                     theme="dark"
                 />
             </main>
