@@ -1576,7 +1576,7 @@ export default function Governance() {
                 {address !== "" && <span>Address: {address}</span>}
             </div>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary>ETH</summary>
                 <div>
                     <button className="ts-button" onClick={async () => await getBalance()}>Get Balance</button>
@@ -1601,7 +1601,7 @@ export default function Governance() {
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary>WETH</summary>
                 <div>
                     <button className="ts-button" onClick={async () => await getWETHBalance()}>Get WETH Balance</button>
@@ -1651,7 +1651,7 @@ export default function Governance() {
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary>OpenZeppelin Ownable</summary>
                 <p>Get Owner</p>
                 <div className="ts-grid">
@@ -1681,7 +1681,7 @@ export default function Governance() {
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary>ERC20 Token</summary>
                 <p>Deployment</p>
                 <div className="ts-grid">
@@ -1712,7 +1712,7 @@ export default function Governance() {
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary>OpenZeppelin Governor</summary>
                 <p>Timelock Deployment</p>
                 <div className="ts-grid">
@@ -1773,7 +1773,7 @@ export default function Governance() {
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary><strong>DAO Deployment</strong></summary>
                 <p>Timelock</p>
                 <div className="ts-grid has-vertically-spaced">
@@ -1816,7 +1816,7 @@ export default function Governance() {
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary><strong>Safe Deployment</strong></summary>
                 <fieldset className="ts-fieldset ts-wrap is-vertical">
                     <label className="ts-checkbox has-top-spaced-small column is-7-wide">
@@ -1953,7 +1953,7 @@ export default function Governance() {
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary><strong>Founder Features</strong></summary>
                 <div className="ts-grid">
                     <div className="ts-input column is-5-wide">
@@ -1972,15 +1972,15 @@ export default function Governance() {
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary><strong>Steward Features</strong></summary>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary><strong>Working Group Features</strong></summary>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion">
+            <details className="ts-accordion" open>
                 <summary><strong>Token Holder Features</strong></summary>
             </details>
             <div className="has-vertically-spaced"></div>
