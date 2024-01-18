@@ -13,6 +13,10 @@ import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { BaseGoerli } from "@thirdweb-dev/chains";
 import ozOwnable from "@openzeppelin/contracts/build/contracts/Ownable.json";
+import { EthersAdapter, ContractNetworksConfig, SafeFactory, SafeAccountConfig, DEFAULT_SAFE_VERSION } from '@safe-global/protocol-kit';
+import Safe from '@safe-global/protocol-kit';
+import { SafeVersion } from '@safe-global/safe-core-sdk-types';
+import { randomBytes } from 'crypto';
 import {
     BASE_GOERLI_WETH_ADDRESS,
     ERC20_BYTECODE,
@@ -175,6 +179,13 @@ export default function Governance() {
                     <div>DAO Governor Address: {daoGovernorAddress}</div>
                 </div>
             );
+    };
+
+    const toastSuccessSafeDeployed = async (safeAddress: string) => {
+        if (chainExplorerUrl !== undefined)
+            return <div>Deployed Safe Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${safeAddress}`} target="_blank" rel="noreferrer">{safeAddress}</a></div>;
+        else
+            return `Deployed Safe Address: ${safeAddress}`;
     };
     //#endregion Toast Callback
 
@@ -998,8 +1009,204 @@ export default function Governance() {
     //#endregion OpenZeppelin Governor
 
     //#region Safe
-    const Safe = {
-        deploy: async (owners: string, threshold: string) => {
+    const onClickSafeConfig = () => {
+        return {
+            isL1SafeSingleton: (document.getElementById("safe-is-l1-singleton") as HTMLInputElement).checked,
+            contractNetworks: {
+                [chainId!]: {
+                    safeMasterCopyAddress: (document.getElementById("safe-custom-factory-singleton-address") as HTMLInputElement).value,
+                    safeProxyFactoryAddress: (document.getElementById("safe-custom-factory-proxy-factory-address") as HTMLInputElement).value,
+                    multiSendAddress: (document.getElementById("safe-custom-factory-multi-send-address") as HTMLInputElement).value,
+                    multiSendCallOnlyAddress: (document.getElementById("safe-custom-factory-multi-send-call-only-address") as HTMLInputElement).value,
+                    fallbackHandlerAddress: (document.getElementById("safe-custom-factory-fallback-handler-address") as HTMLInputElement).value,
+                    signMessageLibAddress: (document.getElementById("safe-custom-factory-sign-message-lib-address") as HTMLInputElement).value,
+                    createCallAddress: (document.getElementById("safe-custom-create-call-address") as HTMLInputElement).value,
+                    simulateTxAccessorAddress: (document.getElementById("safe-simulate-tx-accessor-address") as HTMLInputElement).value
+                }
+            }
+        }
+    };
+
+    const SafeAccount = {
+        _checkSafeConfig: (isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
+            if (isL1SafeSingleton === undefined) {
+                toast.error("Is L1 Safe Singleton cannot be empty");
+                return false;
+            }
+
+            if (contractNetworks !== undefined) {
+                if (contractNetworks[chainId!].safeMasterCopyAddress === "") {
+                    toast.error("Safe Singleton Address cannot be empty");
+                    return false;
+                }
+
+                if (contractNetworks[chainId!].safeProxyFactoryAddress === "") {
+                    toast.error("Safe Proxy Factory Address cannot be empty");
+                    return false;
+                }
+
+                if (contractNetworks[chainId!].multiSendAddress === "") {
+                    toast.error("Multi Send Address cannot be empty");
+                    return false;
+                }
+
+                if (contractNetworks[chainId!].multiSendCallOnlyAddress === "") {
+                    toast.error("Multi Send Call Only Address cannot be empty");
+                    return false;
+                }
+
+                if (contractNetworks[chainId!].fallbackHandlerAddress === "") {
+                    toast.error("Fallback Handler Address cannot be empty");
+                    return false;
+                }
+
+                if (contractNetworks[chainId!].signMessageLibAddress === "") {
+                    toast.error("Sign Message Lib Address cannot be empty");
+                    return false;
+                }
+
+                if (contractNetworks[chainId!].createCallAddress === "") {
+                    toast.error("Create Call Address cannot be empty");
+                    return false;
+                }
+
+                if (contractNetworks[chainId!].simulateTxAccessorAddress === "") {
+                    toast.error("Simulate Tx Accessor Address cannot be empty");
+                    return false;
+                }
+            }
+
+            return true;
+        },
+        connect: async (safeAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
+            if (!await checkNetwork()) return;
+
+            if (safeAddress === "") {
+                toast.error("Safe Address cannot be empty");
+                return;
+            }
+
+            if (!SafeAccount._checkSafeConfig(isL1SafeSingleton, contractNetworks)) return;
+
+            const ethAdapter = new EthersAdapter({
+                ethers,
+                signerOrProvider: signer!
+            });
+
+            return await Safe.create({ ethAdapter, safeAddress, isL1SafeMasterCopy: isL1SafeSingleton, contractNetworks });
+        },
+        getOwners: async (safeAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
+            if (!await checkNetwork()) return;
+
+            if (safeAddress === "") {
+                toast.error("Safe Address cannot be empty");
+                return;
+            }
+
+            if (!SafeAccount._checkSafeConfig(isL1SafeSingleton, contractNetworks)) return;
+
+            const safe = await SafeAccount.connect(safeAddress, isL1SafeSingleton, contractNetworks);
+
+            if (safe === undefined) {
+                toast.error("Safe Account cannot be connected");
+                return;
+            }
+
+            const owners = await safe.getOwners();
+            toast.success(
+                <div>
+                    Owners:
+                    <br></br>
+                    {owners.map((owner) => { return <p>{owner}</p> })}
+                </div>
+            );
+        },
+        getThreshold: async (safeAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
+            if (!await checkNetwork()) return;
+
+            if (safeAddress === "") {
+                toast.error("Safe Address cannot be empty");
+                return;
+            }
+
+            if (!SafeAccount._checkSafeConfig(isL1SafeSingleton, contractNetworks)) return;
+
+            const safe = await SafeAccount.connect(safeAddress, isL1SafeSingleton, contractNetworks);
+
+            if (safe === undefined) {
+                toast.error("Safe Account cannot be connected");
+                return;
+            }
+
+            const threshold = await safe.getThreshold();
+            toast.success(`Threshold: ${threshold}`);
+        },
+        enableModule: async (safeAddress: string, moduleAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
+            if (!await checkNetwork()) return;
+
+            if (moduleAddress === "") {
+                toast.error("Module Address cannot be empty");
+                return;
+            }
+
+            const safe = await SafeAccount.connect(safeAddress, isL1SafeSingleton, contractNetworks);
+
+            if (safe === undefined) {
+                toast.error("Safe Account cannot be connected");
+                return;
+            }
+
+            const safeTransaction = await safe.createEnableModuleTx(moduleAddress);
+            const txResponse = await safe.executeTransaction(safeTransaction);
+            const contractReceipt = await txResponse.transactionResponse?.wait();
+            contractReceipt?.status === 1 ? toast.success("Module enabled successfully") : toast.error("Module enable failed");
+        },
+        disableModule: async (safeAddress: string, moduleAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
+            if (!await checkNetwork()) return;
+
+            if (moduleAddress === "") {
+                toast.error("Module Address cannot be empty");
+                return;
+            }
+
+            const safe = await SafeAccount.connect(safeAddress, isL1SafeSingleton, contractNetworks);
+
+            if (safe === undefined) {
+                toast.error("Safe Account cannot be connected");
+                return;
+            }
+
+            const safeTransaction = await safe.createDisableModuleTx(moduleAddress);
+            const txResponse = await safe.executeTransaction(safeTransaction);
+            const contractReceipt = await txResponse.transactionResponse?.wait();
+            contractReceipt?.status === 1 ? toast.success("Module disabled successfully") : toast.error("Module disable failed");
+        },
+        swapOwner: async (safeAddress: string, oldOwnerAddress: string, newOwnerAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
+            if (!await checkNetwork()) return;
+
+            if (oldOwnerAddress === "") {
+                toast.error("Old Owner Address cannot be empty");
+                return;
+            }
+
+            if (newOwnerAddress === "") {
+                toast.error("New Owner Address cannot be empty");
+                return;
+            }
+
+            const safe = await SafeAccount.connect(safeAddress, isL1SafeSingleton, contractNetworks);
+
+            if (safe === undefined) {
+                toast.error("Safe Account cannot be connected");
+                return;
+            }
+
+            const safeTransaction = await safe.createSwapOwnerTx({ oldOwnerAddress, newOwnerAddress });
+            const txResponse = await safe.executeTransaction(safeTransaction);
+            const contractReceipt = await txResponse.transactionResponse?.wait();
+            contractReceipt?.status === 1 ? toast.success("Owner swapped successfully") : toast.error("Owner swap failed");
+        },
+        deploy: async (owners: string, threshold: string, safeVersion: SafeVersion, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
             if (!await checkNetwork()) return;
 
             if (owners === "") {
@@ -1012,17 +1219,52 @@ export default function Governance() {
                 return;
             }
 
-            toast.error("Unimplemented function");
-        },
-        addModule: async (moduleAddress: string) => {
-            if (!await checkNetwork()) return;
-
-            if (moduleAddress === "") {
-                toast.error("Module Address cannot be empty");
+            if (safeVersion === undefined) {
+                toast.error("Safe Version cannot be empty");
                 return;
             }
 
-            toast.error("Unimplemented function");
+            if (!SafeAccount._checkSafeConfig(isL1SafeSingleton, contractNetworks)) return;
+
+            let ownersArray: string[] = [];
+            owners.split(",").forEach((ownerAddress) => {
+                ownersArray.push(ownerAddress.trim());
+            });
+
+            try {
+                const ethAdapter = new EthersAdapter({
+                    ethers,
+                    signerOrProvider: signer!
+                });
+
+                const safeFactory = await SafeFactory.create({ ethAdapter, safeVersion, isL1SafeMasterCopy: isL1SafeSingleton, contractNetworks });
+
+                const safeAccountConfig: SafeAccountConfig = {
+                    owners: ownersArray,
+                    threshold: parseInt(threshold)
+                };
+
+                const saltNonce = `0x${randomBytes(32).toString('hex')}`;
+
+                let deployedSafeAddress: string | undefined;
+                await toast.promise(
+                    safeFactory.deploySafe({ safeAccountConfig, saltNonce }),
+                    {
+                        success: {
+                            async render({ data }) {
+                                deployedSafeAddress = await data.getAddress();
+                                return toastSuccessSafeDeployed(deployedSafeAddress);
+                            }
+                        }
+                    }
+                ).catch((e) => {
+                    throw e;
+                });
+                return deployedSafeAddress;
+            } catch (e) {
+                console.error(e);
+                toast.error(`${e}`);
+            }
         }
     };
     //#endregion Safe
@@ -1577,35 +1819,39 @@ export default function Governance() {
             <details className="ts-accordion">
                 <summary><strong>Safe Deployment</strong></summary>
                 <fieldset className="ts-fieldset ts-wrap is-vertical">
+                    <label className="ts-checkbox has-top-spaced-small column is-7-wide">
+                        <input type="checkbox" id="safe-is-l1-singleton" />
+                        Is L1 Safe Singleton (<a className="ts-text is-underlined" href="https://docs.safe.global/safe-core-aa-sdk/protocol-kit/reference#create">Read more</a>)
+                    </label>
                     <label className="ts-checkbox has-top-spaced-small">
-                        <input type="checkbox" id="safe-deployment-custom-factory" onClick={(e) => { setCustomSafeFactory(e.currentTarget.checked); }} />
-                        Custom Safe Factory
+                        <input type="checkbox" id="safe-custom-factory" onClick={(e) => { setCustomSafeFactory(e.currentTarget.checked); }} checked={customSafeFactory} />
+                        Use Custom Safe Factory:<br></br>When you get SafeProxyFactory contract error. You'll have to use custom factory because canonical Safe Factory is not deployed on the current network.
                     </label>
                     {customSafeFactory &&
                         <div className="ts-grid">
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Safe Singleton Address" id="safe-deployment-custom-factory-singleton-address" />
+                                <input type="text" placeholder="Safe Singleton Address" id="safe-custom-factory-singleton-address" />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Safe Proxy Factory Address" id="safe-deployment-custom-factory-proxy-factory-address" />
+                                <input type="text" placeholder="Safe Proxy Factory Address" id="safe-custom-factory-proxy-factory-address" />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Multi Send Address" id="safe-deployment-custom-factory-multi-send-address" />
+                                <input type="text" placeholder="Multi Send Address" id="safe-custom-factory-multi-send-address" />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Multi Send Call Only Address" id="safe-deployment-custom-factory-multi-send-call-only-address" />
+                                <input type="text" placeholder="Multi Send Call Only Address" id="safe-custom-factory-multi-send-call-only-address" />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Fallback Handler Address" id="safe-deployment-custom-factory-fallback-handler-address" />
+                                <input type="text" placeholder="Fallback Handler Address" id="safe-custom-factory-fallback-handler-address" />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Sign Message Lib Address" id="safe-deployment-custom-factory-sign-message-lib-address" />
+                                <input type="text" placeholder="Sign Message Lib Address" id="safe-custom-factory-sign-message-lib-address" />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Create Call Address" id="safe-deployment-custom-create-call-address" />
+                                <input type="text" placeholder="Create Call Address" id="safe-custom-create-call-address" />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Simulate Tx Accessor Address" id="safe-deployment-simulate-tx-accessor-address" />
+                                <input type="text" placeholder="Simulate Tx Accessor Address" id="safe-simulate-tx-accessor-address" />
                             </div>
                         </div>
                     }
@@ -1618,15 +1864,92 @@ export default function Governance() {
                     <div className="ts-input column is-2-wide">
                         <input type="text" placeholder="Threshold" id="safe-deployment-owner-threshold" />
                     </div>
-                    <button className="ts-button" onClick={async () => await Safe.deploy((document.getElementById("safe-deployment-owner-addresses") as HTMLInputElement).value, (document.getElementById("safe-deployment-owner-threshold") as HTMLInputElement).value)}>Deploy Safe</button>
+                    <button className="ts-button" onClick={async () => {
+                        const safeVersion = "1.4.1";
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig();
+                        await SafeAccount.deploy(
+                            (document.getElementById("safe-deployment-owner-addresses") as HTMLInputElement).value,
+                            (document.getElementById("safe-deployment-owner-threshold") as HTMLInputElement).value,
+                            safeVersion,
+                            isL1SafeSingleton,
+                            contractNetworks
+                        );
+                    }}>Deploy Safe</button>
                 </div>
                 <br></br>
-                <p>Module Management</p>
+                <p>Read Contract</p>
                 <div className="ts-grid">
                     <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Module Address" id="safe-deployment-module-address" />
+                        <input type="text" placeholder="Safe Address" id="safe-get-owners-safe-address" />
                     </div>
-                    <button className="ts-button" onClick={async () => await Safe.addModule((document.getElementById("safe-deployment-module-address") as HTMLInputElement).value)}>Add Safe Module</button>
+                    <button className="ts-button" onClick={async () => {
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig();
+                        await SafeAccount.getOwners(
+                            (document.getElementById("safe-get-owners-safe-address") as HTMLInputElement).value,
+                            isL1SafeSingleton,
+                            contractNetworks
+                        );
+                    }}>Get Safe Owners</button>
+                </div>
+                <br></br>
+                <p>Module Management (Only support self-owned Safe that requires no additional signature to execute the transaction)</p>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Safe Address" id="safe-enable-module-safe-address" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Module Address" id="safe-enable-module-address" />
+                    </div>
+                    <button className="ts-button" onClick={async () => {
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig();
+                        await SafeAccount.enableModule(
+                            (document.getElementById("safe-enable-module-safe-address") as HTMLInputElement).value,
+                            (document.getElementById("safe-enable-module-address") as HTMLInputElement).value,
+                            isL1SafeSingleton,
+                            contractNetworks
+                        );
+                    }}>Enable Safe Module</button>
+                </div>
+                <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Safe Address" id="safe-disable-module-safe-address" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Module Address" id="safe-disable-module-address" />
+                    </div>
+                    <button className="ts-button" onClick={async () => {
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig();
+                        await SafeAccount.disableModule(
+                            (document.getElementById("safe-disable-module-safe-address") as HTMLInputElement).value,
+                            (document.getElementById("safe-disable-module-address") as HTMLInputElement).value,
+                            isL1SafeSingleton,
+                            contractNetworks
+                        );
+                    }}>Disable Safe Module</button>
+                </div>
+                <br></br>
+                <p>Owner Management (Only support self-owned Safe that requires no additional signature to execute the transaction)</p>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Safe Address" id="safe-swap-owner-safe-address" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Old Owner Address" id="safe-swap-owner-old-address" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="New Owner Address" id="safe-swap-owner-new-address" />
+                    </div>
+                    <button className="ts-button" onClick={async () => {
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig();
+                        await SafeAccount.swapOwner(
+                            (document.getElementById("safe-swap-owner-safe-address") as HTMLInputElement).value,
+                            (document.getElementById("safe-swap-owner-old-address") as HTMLInputElement).value,
+                            (document.getElementById("safe-swap-owner-new-address") as HTMLInputElement).value,
+                            isL1SafeSingleton,
+                            contractNetworks
+                        );
+                    }}>Swap Safe Owner</button>
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
