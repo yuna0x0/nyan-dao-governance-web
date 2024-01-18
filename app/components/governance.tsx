@@ -1009,20 +1009,27 @@ export default function Governance() {
     //#endregion OpenZeppelin Governor
 
     //#region Safe
-    const onClickSafeConfig = () => {
-        return {
-            isL1SafeSingleton: (document.getElementById("safe-is-l1-singleton") as HTMLInputElement).checked,
-            contractNetworks: {
-                [chainId!]: {
-                    safeMasterCopyAddress: (document.getElementById("safe-custom-factory-singleton-address") as HTMLInputElement).value,
-                    safeProxyFactoryAddress: (document.getElementById("safe-custom-factory-proxy-factory-address") as HTMLInputElement).value,
-                    multiSendAddress: (document.getElementById("safe-custom-factory-multi-send-address") as HTMLInputElement).value,
-                    multiSendCallOnlyAddress: (document.getElementById("safe-custom-factory-multi-send-call-only-address") as HTMLInputElement).value,
-                    fallbackHandlerAddress: (document.getElementById("safe-custom-factory-fallback-handler-address") as HTMLInputElement).value,
-                    signMessageLibAddress: (document.getElementById("safe-custom-factory-sign-message-lib-address") as HTMLInputElement).value,
-                    createCallAddress: (document.getElementById("safe-custom-create-call-address") as HTMLInputElement).value,
-                    simulateTxAccessorAddress: (document.getElementById("safe-simulate-tx-accessor-address") as HTMLInputElement).value
+    const onClickSafeConfig = (customSafeFactory: boolean) => {
+        if (customSafeFactory) {
+            return {
+                isL1SafeSingleton: (document.getElementById("safe-is-l1-singleton") as HTMLInputElement).checked,
+                contractNetworks: {
+                    [chainId!]: {
+                        safeMasterCopyAddress: (document.getElementById("safe-custom-factory-singleton-address") as HTMLInputElement).value,
+                        safeProxyFactoryAddress: (document.getElementById("safe-custom-factory-proxy-factory-address") as HTMLInputElement).value,
+                        multiSendAddress: (document.getElementById("safe-custom-factory-multi-send-address") as HTMLInputElement).value,
+                        multiSendCallOnlyAddress: (document.getElementById("safe-custom-factory-multi-send-call-only-address") as HTMLInputElement).value,
+                        fallbackHandlerAddress: (document.getElementById("safe-custom-factory-fallback-handler-address") as HTMLInputElement).value,
+                        signMessageLibAddress: (document.getElementById("safe-custom-factory-sign-message-lib-address") as HTMLInputElement).value,
+                        createCallAddress: (document.getElementById("safe-custom-create-call-address") as HTMLInputElement).value,
+                        simulateTxAccessorAddress: (document.getElementById("safe-simulate-tx-accessor-address") as HTMLInputElement).value
+                    }
                 }
+            }
+        }
+        else {
+            return {
+                isL1SafeSingleton: (document.getElementById("safe-is-l1-singleton") as HTMLInputElement).checked
             }
         }
     };
@@ -1117,7 +1124,7 @@ export default function Governance() {
                 <div>
                     Owners:
                     <br></br>
-                    {owners.map((owner) => { return <p>{owner}</p> })}
+                    {owners.map((owner) => { return `${owner}\n` })}
                 </div>
             );
         },
@@ -1824,8 +1831,8 @@ export default function Governance() {
                         Is L1 Safe Singleton (<a className="ts-text is-underlined" href="https://docs.safe.global/safe-core-aa-sdk/protocol-kit/reference#create">Read more</a>)
                     </label>
                     <label className="ts-checkbox has-top-spaced-small">
-                        <input type="checkbox" id="safe-custom-factory" onClick={(e) => { setCustomSafeFactory(e.currentTarget.checked); }} checked={customSafeFactory} />
-                        Use Custom Safe Factory:<br></br>When you get SafeProxyFactory contract error. You'll have to use custom factory because canonical Safe Factory is not deployed on the current network.
+                        <input type="checkbox" id="safe-custom-factory" onChange={(e) => { setCustomSafeFactory(e.currentTarget.checked); }} checked={customSafeFactory} />
+                        Use Custom Safe Factory:<br></br>When you get SafeProxyFactory contract error. You will have to use custom factory because canonical Safe Factory is not deployed on the current network.
                     </label>
                     {customSafeFactory &&
                         <div className="ts-grid">
@@ -1866,7 +1873,7 @@ export default function Governance() {
                     </div>
                     <button className="ts-button" onClick={async () => {
                         const safeVersion = "1.4.1";
-                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig();
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig(customSafeFactory);
                         await SafeAccount.deploy(
                             (document.getElementById("safe-deployment-owner-addresses") as HTMLInputElement).value,
                             (document.getElementById("safe-deployment-owner-threshold") as HTMLInputElement).value,
@@ -1883,7 +1890,7 @@ export default function Governance() {
                         <input type="text" placeholder="Safe Address" id="safe-get-owners-safe-address" />
                     </div>
                     <button className="ts-button" onClick={async () => {
-                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig();
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig(customSafeFactory);
                         await SafeAccount.getOwners(
                             (document.getElementById("safe-get-owners-safe-address") as HTMLInputElement).value,
                             isL1SafeSingleton,
@@ -1901,7 +1908,7 @@ export default function Governance() {
                         <input type="text" placeholder="Module Address" id="safe-enable-module-address" />
                     </div>
                     <button className="ts-button" onClick={async () => {
-                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig();
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig(customSafeFactory);
                         await SafeAccount.enableModule(
                             (document.getElementById("safe-enable-module-safe-address") as HTMLInputElement).value,
                             (document.getElementById("safe-enable-module-address") as HTMLInputElement).value,
@@ -1919,7 +1926,7 @@ export default function Governance() {
                         <input type="text" placeholder="Module Address" id="safe-disable-module-address" />
                     </div>
                     <button className="ts-button" onClick={async () => {
-                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig();
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig(customSafeFactory);
                         await SafeAccount.disableModule(
                             (document.getElementById("safe-disable-module-safe-address") as HTMLInputElement).value,
                             (document.getElementById("safe-disable-module-address") as HTMLInputElement).value,
@@ -1941,7 +1948,7 @@ export default function Governance() {
                         <input type="text" placeholder="New Owner Address" id="safe-swap-owner-new-address" />
                     </div>
                     <button className="ts-button" onClick={async () => {
-                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig();
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig(customSafeFactory);
                         await SafeAccount.swapOwner(
                             (document.getElementById("safe-swap-owner-safe-address") as HTMLInputElement).value,
                             (document.getElementById("safe-swap-owner-old-address") as HTMLInputElement).value,
