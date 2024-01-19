@@ -1972,7 +1972,7 @@ export default function Governance() {
                         <input type="text" placeholder="To" id="safe-create-transaction-to" />
                     </div>
                     <div className="ts-input column is-16-wide is-resizable">
-                        <textarea placeholder="Data" id="safe-create-transaction-data" />
+                        <textarea placeholder="Data (Input &quot;0x&quot; for transaction without data)" id="safe-create-transaction-data" />
                     </div>
                     <div className="ts-input column is-4-wide">
                         <input type="text" placeholder="Value (Amount)" id="safe-create-transaction-value" />
