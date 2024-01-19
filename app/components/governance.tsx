@@ -1186,7 +1186,7 @@ export default function Governance() {
 
             const safeTransaction = await safe.createTransaction({ safeTransactionData: transactions, options, onlyCalls: callsOnly });
             const safeTransactionHash = await safe.getTransactionHash(safeTransaction);
-            toast.success(`Safe Transaction Hash: ${safeTransactionHash}`);
+            toast.success(`Safe Transaction Hash to sign: ${safeTransactionHash}`);
             return safeTransactionHash;
         },
         enableModule: async (safeAddress: string, moduleAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
