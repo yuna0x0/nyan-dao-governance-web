@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { BaseGoerli } from "@thirdweb-dev/chains";
 import ozOwnable from "@openzeppelin/contracts/build/contracts/Ownable.json";
-import { EthersAdapter, ContractNetworksConfig, SafeFactory, SafeAccountConfig, SafeTransactionOptionalProps, DEFAULT_SAFE_VERSION } from '@safe-global/protocol-kit';
+import { EthersAdapter, ContractNetworksConfig, SafeFactory, SafeAccountConfig, SafeTransactionOptionalProps } from '@safe-global/protocol-kit';
 import Safe from '@safe-global/protocol-kit';
 import { SafeVersion, MetaTransactionData } from '@safe-global/safe-core-sdk-types';
 import { randomBytes } from 'crypto';
@@ -1141,7 +1141,7 @@ export default function Governance() {
             const threshold = await safe.getThreshold();
             toast.success(`Threshold: ${threshold}`);
         },
-        createTransaction: async (safeAddress: string, transactions: MetaTransactionData[], isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig, options?: SafeTransactionOptionalProps, callsOnly?: boolean) => {
+        createTransaction: async (safeAddress: string, isL1SafeSingleton: boolean, transactions: MetaTransactionData[], contractNetworks?: ContractNetworksConfig, callsOnly?: boolean, options?: SafeTransactionOptionalProps) => {
             if (!await checkNetwork()) return;
 
             if (safeAddress === "") {
@@ -1153,6 +1153,29 @@ export default function Governance() {
                 toast.error("Transactions cannot be empty");
                 return;
             }
+
+            let transactionFormError = false;
+            transactions.forEach(transaction => {
+                if (transaction.to === "") {
+                    toast.error("Transaction To cannot be empty");
+                    transactionFormError = true;
+                    return;
+                }
+
+                if (transaction.data === "") {
+                    toast.error("Transaction Data cannot be empty");
+                    transactionFormError = true;
+                    return;
+                }
+
+                if (transaction.value === "") {
+                    toast.error("Transaction Value cannot be empty");
+                    transactionFormError = true;
+                    return;
+                }
+            });
+
+            if (transactionFormError) return;
 
             const safe = await SafeAccount.connect(safeAddress, isL1SafeSingleton, contractNetworks);
 
@@ -1938,6 +1961,38 @@ export default function Governance() {
                             contractNetworks
                         );
                     }}>Get Safe Threshold</button>
+                </div>
+                <br></br>
+                <p>Transaction</p>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Safe Address (From)" id="safe-create-transaction-safe-address" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="To" id="safe-create-transaction-to" />
+                    </div>
+                    <div className="ts-input column is-16-wide is-resizable">
+                        <textarea placeholder="Data" id="safe-create-transaction-data" />
+                    </div>
+                    <div className="ts-input column is-4-wide">
+                        <input type="text" placeholder="Value (Amount)" id="safe-create-transaction-value" />
+                    </div>
+                    <button className="ts-button" onClick={async () => {
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig(customSafeFactory);
+                        const transactions: MetaTransactionData[] = [
+                            {
+                                to: (document.getElementById("safe-create-transaction-to") as HTMLInputElement).value,
+                                data: (document.getElementById("safe-create-transaction-data") as HTMLInputElement).value,
+                                value: (document.getElementById("safe-create-transaction-value") as HTMLInputElement).value
+                            }
+                        ];
+                        await SafeAccount.createTransaction(
+                            (document.getElementById("safe-create-transaction-safe-address") as HTMLInputElement).value,
+                            isL1SafeSingleton,
+                            transactions,
+                            contractNetworks
+                        );
+                    }}>Create Transaction</button>
                 </div>
                 <br></br>
                 <p>Module Management (Only support self-owned Safe that requires no additional signature to execute the transaction)</p>
