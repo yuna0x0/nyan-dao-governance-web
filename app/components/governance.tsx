@@ -13,11 +13,20 @@ import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { BaseGoerli } from "@thirdweb-dev/chains";
 import ozOwnable from "@openzeppelin/contracts/build/contracts/Ownable.json";
-import { EthersAdapter, ContractNetworksConfig, SafeFactory, SafeAccountConfig, DEFAULT_SAFE_VERSION } from '@safe-global/protocol-kit';
+import { EthersAdapter, ContractNetworksConfig, SafeFactory, SafeAccountConfig, SafeTransactionOptionalProps, DEFAULT_SAFE_VERSION } from '@safe-global/protocol-kit';
 import Safe from '@safe-global/protocol-kit';
-import { SafeVersion } from '@safe-global/safe-core-sdk-types';
+import { SafeVersion, MetaTransactionData } from '@safe-global/safe-core-sdk-types';
 import { randomBytes } from 'crypto';
 import {
+    DEFAULT_SAFE_FACTORY_SINGLETON_ADDRESS,
+    DEFAULT_SAFE_FACTORY_L2_SINGLETON_ADDRESS,
+    DEFAULT_SAFE_FACTORY_PROXY_FACTORY_ADDRESS,
+    DEFAULT_SAFE_FACTORY_MULTI_SEND_ADDRESS,
+    DEFAULT_SAFE_FACTORY_MULTI_SEND_CALL_ONLY_ADDRESS,
+    DEFAULT_SAFE_FACTORY_FALLBACK_HANDLER_ADDRESS,
+    DEFAULT_SAFE_FACTORY_SIGN_MESSAGE_LIB_ADDRESS,
+    DEFAULT_SAFE_FACTORY_CREATE_CALL_ADDRESS,
+    DEFAULT_SAFE_FACTORY_SIMULATE_TX_ACCESSOR_ADDRESS,
     BASE_GOERLI_WETH_ADDRESS,
     ERC20_BYTECODE,
     ERC20_ABI,
@@ -44,6 +53,7 @@ export default function Governance() {
     const [lastChainId, setLastChainId] = useState<number | undefined>(undefined);
     const [lastAddress, setLastAddress] = useState<string | undefined>(undefined);
 
+    const [safeIsL1Singleton, setSafeIsL1Singleton] = useState(false);
     const [customSafeFactory, setCustomSafeFactory] = useState(false);
 
     const [balance, setBalance] = useState("");
@@ -54,6 +64,7 @@ export default function Governance() {
         if (lastChainId !== undefined) setLastChainId(undefined);
         if (lastAddress !== undefined) setLastAddress(undefined);
 
+        if (safeIsL1Singleton !== false) setSafeIsL1Singleton(false);
         if (customSafeFactory !== false) setCustomSafeFactory(false);
 
         if (balance !== "") setBalance("");
@@ -132,6 +143,13 @@ export default function Governance() {
     }
     //#endregion StateCheck
 
+    //#region ErrorHandling
+    const handleError = (e: any) => {
+        console.error(e);
+        toast.error(`${e}`);
+    };
+    //#endregion ErrorHandling
+
     //#region Toast Callback
     const toastSuccessTx = (data: ethers.providers.TransactionResponse) => {
         if (chainExplorerUrl !== undefined)
@@ -195,8 +213,7 @@ export default function Governance() {
         try {
             setBalance(`Balance: ${ethers.utils.formatEther(await signer?.getBalance()!)} ${chain?.nativeCurrency.symbol}`);
         } catch (e) {
-            console.error(e);
-            toast.error(`${e}`);
+            handleError(e);
         }
     };
 
@@ -217,11 +234,10 @@ export default function Governance() {
             ).then((v) => {
                 setSignedMessage(`Signed Message: ${v}`);
             }).catch((e) => {
-                toast.error(`${e}`);
+                throw e;
             });
         } catch (e) {
-            console.error(e);
-            toast.error(`${e}`);
+            handleError(e);
         }
     };
 
@@ -260,8 +276,7 @@ export default function Governance() {
                 }
             )
         } catch (e) {
-            console.error(e);
-            toast.error(`${e}`);
+            handleError(e);
         }
     };
     //#endregion ETH
@@ -283,8 +298,7 @@ export default function Governance() {
             const balance = await wethContract.balanceOf(await signer?.getAddress());
             setWETHBalance(`WETH Balance: ${ethers.utils.formatEther(balance)} WETH`);
         } catch (e) {
-            console.error(e);
-            toast.error(`${e}`);
+            handleError(e);
         }
     };
 
@@ -325,8 +339,7 @@ export default function Governance() {
                 }
             )
         } catch (e) {
-            console.error(e);
-            toast.error(`${e}`);
+            handleError(e);
         }
     };
 
@@ -367,8 +380,7 @@ export default function Governance() {
                 }
             )
         } catch (e) {
-            console.error(e);
-            toast.error(`${e}`);
+            handleError(e);
         }
     };
 
@@ -414,8 +426,7 @@ export default function Governance() {
                 }
             )
         } catch (e) {
-            console.error(e);
-            toast.error(`${e}`);
+            handleError(e);
         }
     };
 
@@ -461,8 +472,7 @@ export default function Governance() {
                 }
             )
         } catch (e) {
-            console.error(e);
-            toast.error(`${e}`);
+            handleError(e);
         }
     };
 
@@ -513,8 +523,7 @@ export default function Governance() {
                 }
             )
         } catch (e) {
-            console.error(e);
-            toast.error(`${e}`);
+            handleError(e);
         }
     };
     //#endregion WETH
@@ -534,8 +543,7 @@ export default function Governance() {
                 const owner = await contract.owner();
                 toast.success(`Owner: ${owner}`);
             } catch (e) {
-                console.error(e);
-                toast.error(`${e}`);
+                handleError(e);
             }
         },
         transferOwnership: async (address: string, newOwner: string) => {
@@ -578,8 +586,7 @@ export default function Governance() {
                     throw e;
                 });
             } catch (e) {
-                console.error(e);
-                toast.error(`${e}`);
+                handleError(e);
             }
         },
         renounceOwnership: async (address: string) => {
@@ -617,8 +624,7 @@ export default function Governance() {
                     throw e;
                 });
             } catch (e) {
-                console.error(e);
-                toast.error(`${e}`);
+                handleError(e);
             }
         }
     };
@@ -642,8 +648,7 @@ export default function Governance() {
                     const name = await contract.name();
                     toast.success(`Name: ${name}`);
                 } catch (e) {
-                    console.error(e);
-                    toast.error(`${e}`);
+                    handleError(e);
                 }
             }
         },
@@ -661,8 +666,7 @@ export default function Governance() {
                     const symbol = await contract.symbol();
                     toast.success(`Symbol: ${symbol}`);
                 } catch (e) {
-                    console.error(e);
-                    toast.error(`${e}`);
+                    handleError(e);
                 }
             }
         },
@@ -680,8 +684,7 @@ export default function Governance() {
                     const decimals = await contract.decimals();
                     toast.success(`Decimals: ${decimals}`);
                 } catch (e) {
-                    console.error(e);
-                    toast.error(`${e}`);
+                    handleError(e);
                 }
             }
         },
@@ -699,8 +702,7 @@ export default function Governance() {
                     const totalSupply = await contract.totalSupply();
                     toast.success(`Total Supply: ${totalSupply.div(BigNumber.from(10).pow(await contract.decimals()))} ${await contract.symbol()} (${totalSupply})`);
                 } catch (e) {
-                    console.error(e);
-                    toast.error(`${e}`);
+                    handleError(e);
                 }
             }
         },
@@ -767,16 +769,15 @@ export default function Governance() {
                     ).then((transactionReceipt) => {
                         deployedAddress = transactionReceipt.contractAddress;
                     }, (e) => {
-                        console.error(e);
+                        throw e;
                     });
                 }, (e) => {
-                    console.error(e);
+                    throw e;
                 });
 
                 return deployedAddress;
             } catch (e) {
-                console.error(e);
-                toast.error(`${e}`);
+                handleError(e);
             }
         }
     };
@@ -800,8 +801,7 @@ export default function Governance() {
                     const governorName = await contract.name();
                     toast.success(`Governor Name: ${governorName}`);
                 } catch (e) {
-                    console.error(e);
-                    toast.error(`${e}`);
+                    handleError(e);
                 }
             }
         },
@@ -883,16 +883,15 @@ export default function Governance() {
                     ).then((transactionReceipt) => {
                         deployedAddress = transactionReceipt.contractAddress;
                     }, (e) => {
-                        console.error(e);
+                        throw e;
                     });
                 }, (e) => {
-                    console.error(e);
+                    throw e;
                 });
 
                 return deployedAddress;
             } catch (e) {
-                console.error(e);
-                toast.error(`${e}`);
+                handleError(e);
             }
         }
     };
@@ -914,8 +913,7 @@ export default function Governance() {
                     const minDelay = await contract.getMinDelay();
                     toast.success(`Minimum Delay: ${minDelay}`);
                 } catch (e) {
-                    console.error(e);
-                    toast.error(`${e}`);
+                    handleError(e);
                 }
             }
         },
@@ -992,16 +990,15 @@ export default function Governance() {
                     ).then((transactionReceipt) => {
                         deployedAddress = transactionReceipt.contractAddress;
                     }, (e) => {
-                        console.error(e);
+                        throw e;
                     });
                 }, (e) => {
-                    console.error(e);
+                    throw e;
                 });
 
                 return deployedAddress;
             } catch (e) {
-                console.error(e);
-                toast.error(`${e}`);
+                handleError(e);
             }
         }
 
@@ -1012,7 +1009,7 @@ export default function Governance() {
     const onClickSafeConfig = (customSafeFactory: boolean) => {
         if (customSafeFactory) {
             return {
-                isL1SafeSingleton: (document.getElementById("safe-is-l1-singleton") as HTMLInputElement).checked,
+                isL1SafeSingleton: safeIsL1Singleton,
                 contractNetworks: {
                     [chainId!]: {
                         safeMasterCopyAddress: (document.getElementById("safe-custom-factory-singleton-address") as HTMLInputElement).value,
@@ -1029,7 +1026,7 @@ export default function Governance() {
         }
         else {
             return {
-                isL1SafeSingleton: (document.getElementById("safe-is-l1-singleton") as HTMLInputElement).checked
+                isL1SafeSingleton: safeIsL1Singleton
             }
         }
     };
@@ -1110,8 +1107,6 @@ export default function Governance() {
                 return;
             }
 
-            if (!SafeAccount._checkSafeConfig(isL1SafeSingleton, contractNetworks)) return;
-
             const safe = await SafeAccount.connect(safeAddress, isL1SafeSingleton, contractNetworks);
 
             if (safe === undefined) {
@@ -1136,8 +1131,6 @@ export default function Governance() {
                 return;
             }
 
-            if (!SafeAccount._checkSafeConfig(isL1SafeSingleton, contractNetworks)) return;
-
             const safe = await SafeAccount.connect(safeAddress, isL1SafeSingleton, contractNetworks);
 
             if (safe === undefined) {
@@ -1147,6 +1140,31 @@ export default function Governance() {
 
             const threshold = await safe.getThreshold();
             toast.success(`Threshold: ${threshold}`);
+        },
+        createTransaction: async (safeAddress: string, transactions: MetaTransactionData[], isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig, options?: SafeTransactionOptionalProps, callsOnly?: boolean) => {
+            if (!await checkNetwork()) return;
+
+            if (safeAddress === "") {
+                toast.error("Safe Address cannot be empty");
+                return;
+            }
+
+            if (transactions.length === 0) {
+                toast.error("Transactions cannot be empty");
+                return;
+            }
+
+            const safe = await SafeAccount.connect(safeAddress, isL1SafeSingleton, contractNetworks);
+
+            if (safe === undefined) {
+                toast.error("Safe Account cannot be connected");
+                return;
+            }
+
+            const safeTransaction = await safe.createTransaction({ safeTransactionData: transactions, options, onlyCalls: callsOnly });
+            const safeTransactionHash = await safe.getTransactionHash(safeTransaction);
+            toast.success(`Safe Transaction Hash: ${safeTransactionHash}`);
+            return safeTransactionHash;
         },
         enableModule: async (safeAddress: string, moduleAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
             if (!await checkNetwork()) return;
@@ -1269,8 +1287,7 @@ export default function Governance() {
                 });
                 return deployedSafeAddress;
             } catch (e) {
-                console.error(e);
-                toast.error(`${e}`);
+                handleError(e);
             }
         }
     };
@@ -1480,8 +1497,7 @@ export default function Governance() {
             toast.success(toastSuccessDaoDeployed(daoTimelockAddress, daoTokenAddress, daoGovernorAddress));
         }
         catch (e) {
-            console.error(e);
-            toast.error(`${e}`);
+            handleError(e);
         }
     };
     //#endregion DAO Deployment
@@ -1561,16 +1577,15 @@ export default function Governance() {
                     ).then((transactionReceipt) => {
                         deployedAddress = transactionReceipt.contractAddress;
                     }, (e) => {
-                        console.error(e);
+                        throw e;
                     });
                 }, (e) => {
-                    console.error(e);
+                    throw e;
                 });
 
                 return deployedAddress;
             } catch (e) {
-                console.error(e);
-                toast.error(`${e}`);
+                handleError(e);
             }
         }
     };
@@ -1825,11 +1840,23 @@ export default function Governance() {
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion" open>
                 <summary><strong>Safe Deployment</strong></summary>
-                <fieldset className="ts-fieldset ts-wrap is-vertical">
-                    <label className="ts-checkbox has-top-spaced-small column is-7-wide">
-                        <input type="checkbox" id="safe-is-l1-singleton" />
+                <fieldset className="ts-fieldset ts-grid is-vertical">
+                    <label className="ts-checkbox has-top-spaced-small column is-16-wide">
+                        <input type="checkbox" id="safe-is-l1-singleton" onChange={(e) => { setSafeIsL1Singleton(e.currentTarget.checked); }} checked={safeIsL1Singleton} />
                         Is L1 Safe Singleton (<a className="ts-text is-underlined" href="https://docs.safe.global/safe-core-aa-sdk/protocol-kit/reference#create">Read more</a>)
                     </label>
+                    <label className="ts-checkbox has-top-spaced-small">
+                        Safe Version:
+                    </label>
+                    <div className="ts-select">
+                        <select id="safe-version" defaultValue="1.4.1">
+                            <option value="1.4.1">1.4.1</option>
+                            <option value="1.3.0">1.3.0</option>
+                            <option value="1.2.0">1.2.0</option>
+                            <option value="1.1.1">1.1.1</option>
+                            <option value="1.0.0">1.0.0</option>
+                        </select>
+                    </div>
                     <label className="ts-checkbox has-top-spaced-small">
                         <input type="checkbox" id="safe-custom-factory" onChange={(e) => { setCustomSafeFactory(e.currentTarget.checked); }} checked={customSafeFactory} />
                         Use Custom Safe Factory:<br></br>When you get SafeProxyFactory contract error. You will have to use custom factory because canonical Safe Factory is not deployed on the current network.
@@ -1837,28 +1864,28 @@ export default function Governance() {
                     {customSafeFactory &&
                         <div className="ts-grid">
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Safe Singleton Address" id="safe-custom-factory-singleton-address" />
+                                <input type="text" placeholder="Safe Singleton Address" id="safe-custom-factory-singleton-address" defaultValue={safeIsL1Singleton ? DEFAULT_SAFE_FACTORY_SINGLETON_ADDRESS : DEFAULT_SAFE_FACTORY_L2_SINGLETON_ADDRESS} />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Safe Proxy Factory Address" id="safe-custom-factory-proxy-factory-address" />
+                                <input type="text" placeholder="Safe Proxy Factory Address" id="safe-custom-factory-proxy-factory-address" defaultValue={DEFAULT_SAFE_FACTORY_PROXY_FACTORY_ADDRESS} />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Multi Send Address" id="safe-custom-factory-multi-send-address" />
+                                <input type="text" placeholder="Multi Send Address" id="safe-custom-factory-multi-send-address" defaultValue={DEFAULT_SAFE_FACTORY_MULTI_SEND_ADDRESS} />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Multi Send Call Only Address" id="safe-custom-factory-multi-send-call-only-address" />
+                                <input type="text" placeholder="Multi Send Call Only Address" id="safe-custom-factory-multi-send-call-only-address" defaultValue={DEFAULT_SAFE_FACTORY_MULTI_SEND_CALL_ONLY_ADDRESS} />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Fallback Handler Address" id="safe-custom-factory-fallback-handler-address" />
+                                <input type="text" placeholder="Fallback Handler Address" id="safe-custom-factory-fallback-handler-address" defaultValue={DEFAULT_SAFE_FACTORY_FALLBACK_HANDLER_ADDRESS} />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Sign Message Lib Address" id="safe-custom-factory-sign-message-lib-address" />
+                                <input type="text" placeholder="Sign Message Lib Address" id="safe-custom-factory-sign-message-lib-address" defaultValue={DEFAULT_SAFE_FACTORY_SIGN_MESSAGE_LIB_ADDRESS} />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Create Call Address" id="safe-custom-create-call-address" />
+                                <input type="text" placeholder="Create Call Address" id="safe-custom-create-call-address" defaultValue={DEFAULT_SAFE_FACTORY_CREATE_CALL_ADDRESS} />
                             </div>
                             <div className="ts-input column is-5-wide">
-                                <input type="text" placeholder="Simulate Tx Accessor Address" id="safe-simulate-tx-accessor-address" />
+                                <input type="text" placeholder="Simulate Tx Accessor Address" id="safe-simulate-tx-accessor-address" defaultValue={DEFAULT_SAFE_FACTORY_SIMULATE_TX_ACCESSOR_ADDRESS} />
                             </div>
                         </div>
                     }
@@ -1872,12 +1899,12 @@ export default function Governance() {
                         <input type="text" placeholder="Threshold" id="safe-deployment-owner-threshold" />
                     </div>
                     <button className="ts-button" onClick={async () => {
-                        const safeVersion = "1.4.1";
+                        const safeVersion = (document.getElementById("safe-version") as HTMLSelectElement).value;
                         const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig(customSafeFactory);
                         await SafeAccount.deploy(
                             (document.getElementById("safe-deployment-owner-addresses") as HTMLInputElement).value,
                             (document.getElementById("safe-deployment-owner-threshold") as HTMLInputElement).value,
-                            safeVersion,
+                            safeVersion as SafeVersion,
                             isL1SafeSingleton,
                             contractNetworks
                         );
@@ -1897,6 +1924,20 @@ export default function Governance() {
                             contractNetworks
                         );
                     }}>Get Safe Owners</button>
+                </div>
+                <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Safe Address" id="safe-get-threshold-safe-address" />
+                    </div>
+                    <button className="ts-button" onClick={async () => {
+                        const { isL1SafeSingleton, contractNetworks } = onClickSafeConfig(customSafeFactory);
+                        await SafeAccount.getThreshold(
+                            (document.getElementById("safe-get-threshold-safe-address") as HTMLInputElement).value,
+                            isL1SafeSingleton,
+                            contractNetworks
+                        );
+                    }}>Get Safe Threshold</button>
                 </div>
                 <br></br>
                 <p>Module Management (Only support self-owned Safe that requires no additional signature to execute the transaction)</p>
