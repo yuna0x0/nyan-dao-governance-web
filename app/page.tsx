@@ -17,7 +17,7 @@ import {
     ConnectWallet,
     darkTheme
 } from "@thirdweb-dev/react";
-import { BaseGoerli } from "@thirdweb-dev/chains";
+import { BaseGoerli, Holesky } from "@thirdweb-dev/chains";
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
@@ -44,7 +44,7 @@ export default function Home() {
     return (
         <ThirdwebProvider
             clientId={process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID}
-            supportedChains={[BaseGoerli, localhostChain]}
+            supportedChains={[BaseGoerli, localhostChain, Holesky]}
             supportedWallets={[
                 metamaskWallet({ recommended: true }),
                 coinbaseWallet(),
