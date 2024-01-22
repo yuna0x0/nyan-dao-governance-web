@@ -1582,6 +1582,158 @@ export default function Governance() {
                 handleError(e);
             }
         },
+        proposeSteward: async (contractAddress: string, stewardAction: StewardAction, targetAddress: string, newExpireTimestamp: string) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (targetAddress === "") {
+                toast.error("Target Address cannot be empty");
+                return;
+            }
+
+            if (newExpireTimestamp === "") {
+                toast.error("New Expire Timestamp cannot be empty");
+                return;
+            }
+
+            try {
+                const stewardSystem = new ethers.Contract(contractAddress, STEWARD_SYSTEM_ABI, signer);
+                const tx = stewardSystem.proposeSteward(stewardAction, targetAddress, newExpireTimestamp);
+
+                await toast.promise(
+                    tx,
+                    {
+                        pending: `Proposing Steward...`,
+                        success: {
+                            render({ data }) {
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            }
+                        },
+                        error: {
+                            render({ data }) {
+                                return `${(data as any).message}`;
+                            }
+                        }
+                    }
+                ).then(async (tx) => {
+                    await toast.promise(
+                        (tx as ethers.providers.TransactionResponse).wait(),
+                        {
+                            pending: `Waiting for transaction...`,
+                            success: "Transaction confirmed"
+                        }
+                    ).catch((e) => {
+                        throw e;
+                    });
+                }, (e) => {
+                    throw e;
+                });
+            } catch (e) {
+                handleError(e);
+            }
+        },
+        voteOnStewardProposal: async (contractAddress: string, proposalId: string, vote: Vote) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (proposalId === "") {
+                toast.error("Proposal ID cannot be empty");
+                return;
+            }
+
+            try {
+                const stewardSystem = new ethers.Contract(contractAddress, STEWARD_SYSTEM_ABI, signer);
+                const tx = stewardSystem.voteOnStewardProposal(proposalId, vote);
+
+                await toast.promise(
+                    tx,
+                    {
+                        pending: `Voting on Steward Proposal...`,
+                        success: {
+                            render({ data }) {
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            }
+                        },
+                        error: {
+                            render({ data }) {
+                                return `${(data as any).message}`;
+                            }
+                        }
+                    }
+                ).then(async (tx) => {
+                    await toast.promise(
+                        (tx as ethers.providers.TransactionResponse).wait(),
+                        {
+                            pending: `Waiting for transaction...`,
+                            success: "Transaction confirmed"
+                        }
+                    ).catch((e) => {
+                        throw e;
+                    });
+                }, (e) => {
+                    throw e;
+                });
+            } catch (e) {
+                handleError(e);
+            }
+        },
+        executeStewardProposal: async (contractAddress: string, proposalId: string) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (proposalId === "") {
+                toast.error("Proposal ID cannot be empty");
+                return;
+            }
+
+            try {
+                const stewardSystem = new ethers.Contract(contractAddress, STEWARD_SYSTEM_ABI, signer);
+                const tx = stewardSystem.executeStewardProposal(proposalId);
+
+                await toast.promise(
+                    tx,
+                    {
+                        pending: `Executing Steward Proposal...`,
+                        success: {
+                            render({ data }) {
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            }
+                        },
+                        error: {
+                            render({ data }) {
+                                return `${(data as any).message}`;
+                            }
+                        }
+                    }
+                ).then(async (tx) => {
+                    await toast.promise(
+                        (tx as ethers.providers.TransactionResponse).wait(),
+                        {
+                            pending: `Waiting for transaction...`,
+                            success: "Transaction confirmed"
+                        }
+                    ).catch((e) => {
+                        throw e;
+                    });
+                }, (e) => {
+                    throw e;
+                });
+            } catch (e) {
+                handleError(e);
+            }
+        },
         deploy: async (stewardAddresses: string, stewardExpireTimestamps: string, stewardProposalVoteDuration: string, owner: string) => {
             if (!await checkNetwork()) return;
 
@@ -2589,11 +2741,64 @@ export default function Governance() {
                         await WorkingGroupSystem.executeWorkingGroupProposal((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, (document.getElementById("steward-features-working-group-proposal-id") as HTMLInputElement).value);
                     }}>Execute Proposal</button>
                 </div>
-                {/* <br></br>
+                <br></br>
                 <p>Steward Proposal</p>
                 <div className="ts-grid">
-
-                </div> */}
+                    <div className="ts-select">
+                        <select id="steward-features-steward-proposal-action" defaultValue="">
+                            <option value="">Action</option>
+                            <option value="set">Set</option>
+                            <option value="remove">Remove</option>
+                        </select>
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Target Address" id="steward-features-stewardp-proposal-target-address" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="New Expire Timestamp" id="steward-features-steward-new-expire-timestamp" />
+                    </div>
+                    <button className="ts-button" onClick={async () => {
+                        let action;
+                        if ((document.getElementById("steward-features-steward-proposal-action") as HTMLSelectElement).value == "set")
+                            action = WorkingGroupAction.Set;
+                        else if ((document.getElementById("steward-features-steward-proposal-action") as HTMLSelectElement).value == "remove")
+                            action = WorkingGroupAction.Remove;
+                        else
+                            return;
+                        const targetAddress = (document.getElementById("steward-features-steward-proposal-target-address") as HTMLInputElement).value;
+                        const newExpireTimestamp = (document.getElementById("steward-features-steward-new-expire-timestamp") as HTMLInputElement).value;
+                        await StewardSystem.proposeSteward((document.getElementById("steward-features-system-address") as HTMLInputElement).value, action, targetAddress, newExpireTimestamp);
+                    }}>Create Steward Proposal</button>
+                </div>
+                <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Proposal ID" id="steward-features-steward-proposal-id" />
+                    </div>
+                    <div className="ts-select">
+                        <select id="steward-features-steward-proposal-vote" defaultValue="">
+                            <option value="">Vote</option>
+                            <option value="abstain">Abstain</option>
+                            <option value="approve">Approve</option>
+                            <option value="reject">Reject</option>
+                        </select>
+                    </div>
+                    <button className="ts-button" onClick={async () => {
+                        let vote;
+                        if ((document.getElementById("steward-features-steward-proposal-vote") as HTMLSelectElement).value == "abstain")
+                            vote = Vote.Abstain;
+                        else if ((document.getElementById("steward-features-steward-proposal-vote") as HTMLSelectElement).value == "approve")
+                            vote = Vote.Approve;
+                        else if ((document.getElementById("steward-features-steward-proposal-vote") as HTMLSelectElement).value == "reject")
+                            vote = Vote.Reject;
+                        else
+                            return;
+                        await StewardSystem.voteOnStewardProposal((document.getElementById("steward-features-system-address") as HTMLInputElement).value, (document.getElementById("steward-features-steward-proposal-id") as HTMLInputElement).value, vote);
+                    }}>Vote On Proposal</button>
+                    <button className="ts-button" onClick={async () => {
+                        await StewardSystem.executeStewardProposal((document.getElementById("steward-features-system-address") as HTMLInputElement).value, (document.getElementById("steward-features-steward-proposal-id") as HTMLInputElement).value);
+                    }}>Execute Proposal</button>
+                </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             {/* <details className="ts-accordion" open>
