@@ -2522,7 +2522,7 @@ export default function Governance() {
                         <input type="text" placeholder="Proposal ID" id="steward-features-working-group-proposal-id" />
                     </div>
                     <div className="ts-select">
-                        <select id="steward-features-working-group-proposal-action" defaultValue="">
+                        <select id="steward-features-working-group-proposal-vote" defaultValue="">
                             <option value="">Vote</option>
                             <option value="abstain">Abstain</option>
                             <option value="approve">Approve</option>
@@ -2531,16 +2531,16 @@ export default function Governance() {
                     </div>
                     <button className="ts-button" onClick={async () => {
                         let vote;
-                        if ((document.getElementById("steward-features-working-group-proposal-action") as HTMLSelectElement).value == "abstain")
+                        if ((document.getElementById("steward-features-working-group-proposal-vote") as HTMLSelectElement).value == "abstain")
                             vote = Vote.Abstain;
-                        else if ((document.getElementById("steward-features-working-group-proposal-action") as HTMLSelectElement).value == "approve")
+                        else if ((document.getElementById("steward-features-working-group-proposal-vote") as HTMLSelectElement).value == "approve")
                             vote = Vote.Approve;
-                        else if ((document.getElementById("steward-features-working-group-proposal-action") as HTMLSelectElement).value == "reject")
+                        else if ((document.getElementById("steward-features-working-group-proposal-vote") as HTMLSelectElement).value == "reject")
                             vote = Vote.Reject;
                         else
                             return;
                         await WorkingGroupSystem.voteOnWorkingGroupProposal((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, (document.getElementById("steward-features-working-group-proposal-id") as HTMLInputElement).value, vote);
-                    }}></button>
+                    }}>Vote On Proposal</button>
                 </div>
                 {/* <br></br>
                 <p>Steward Proposal</p>
