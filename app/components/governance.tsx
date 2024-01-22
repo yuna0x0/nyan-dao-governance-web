@@ -1795,6 +1795,50 @@ export default function Governance() {
                 handleError(e);
             }
         },
+        executeWorkingGroupProposal: async (contractAddress: string, proposalId: string) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (proposalId === "") {
+                toast.error("Proposal ID cannot be empty");
+                return;
+            }
+
+            try {
+                const workingGroupSystem = new ethers.Contract(contractAddress, WORKING_GROUP_SYSTEM_ABI, signer);
+                const tx = workingGroupSystem.executeWorkingGroupProposal(proposalId);
+
+                await toast.promise(
+                    tx,
+                    {
+                        pending: `Executing Working Group Proposal...`,
+                        success: {
+                            render({ data }) {
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            }
+                        }
+                    }
+                ).then(async (tx) => {
+                    await toast.promise(
+                        (tx as ethers.providers.TransactionResponse).wait(),
+                        {
+                            pending: `Waiting for transaction...`,
+                            success: "Transaction confirmed"
+                        }
+                    ).catch((e) => {
+                        throw e;
+                    });
+                }, (e) => {
+                    throw e;
+                });
+            } catch (e) {
+                handleError(e);
+            }
+        },
         voteOnWorkingGroupProposal: async (contractAddress: string, proposalId: string, vote: Vote) => {
             if (!await checkNetwork()) return;
 
@@ -2541,6 +2585,9 @@ export default function Governance() {
                             return;
                         await WorkingGroupSystem.voteOnWorkingGroupProposal((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, (document.getElementById("steward-features-working-group-proposal-id") as HTMLInputElement).value, vote);
                     }}>Vote On Proposal</button>
+                    <button className="ts-button" onClick={async () => {
+                        await WorkingGroupSystem.executeWorkingGroupProposal((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, (document.getElementById("steward-features-working-group-proposal-id") as HTMLInputElement).value);
+                    }}>Execute Proposal</button>
                 </div>
                 {/* <br></br>
                 <p>Steward Proposal</p>
