@@ -653,75 +653,163 @@ export default function Governance() {
         abi: ERC20_ABI,
         bytecode: ERC20_BYTECODE,
         getName: async (address: string) => {
-            {
-                if (!await checkNetwork()) return;
+            if (!await checkNetwork()) return;
 
-                if (address === "") {
-                    toast.error("Address cannot be empty");
-                    return;
-                }
+            if (address === "") {
+                toast.error("Address cannot be empty");
+                return;
+            }
 
-                try {
-                    const contract = new ethers.Contract(address, ERC20.abi, signer);
-                    const name = await contract.name();
-                    toast.success(`Name: ${name}`);
-                } catch (e) {
-                    handleError(e);
-                }
+            try {
+                const contract = new ethers.Contract(address, ERC20.abi, signer);
+                const name = await contract.name();
+                toast.success(`Name: ${name}`);
+            } catch (e) {
+                handleError(e);
             }
         },
         getSymbol: async (address: string) => {
-            {
-                if (!await checkNetwork()) return;
+            if (!await checkNetwork()) return;
 
-                if (address === "") {
-                    toast.error("Address cannot be empty");
-                    return;
-                }
+            if (address === "") {
+                toast.error("Address cannot be empty");
+                return;
+            }
 
-                try {
-                    const contract = new ethers.Contract(address, ERC20.abi, signer);
-                    const symbol = await contract.symbol();
-                    toast.success(`Symbol: ${symbol}`);
-                } catch (e) {
-                    handleError(e);
-                }
+            try {
+                const contract = new ethers.Contract(address, ERC20.abi, signer);
+                const symbol = await contract.symbol();
+                toast.success(`Symbol: ${symbol}`);
+            } catch (e) {
+                handleError(e);
             }
         },
         getDecimals: async (address: string) => {
-            {
-                if (!await checkNetwork()) return;
+            if (!await checkNetwork()) return;
 
-                if (address === "") {
-                    toast.error("Address cannot be empty");
-                    return;
-                }
+            if (address === "") {
+                toast.error("Address cannot be empty");
+                return;
+            }
 
-                try {
-                    const contract = new ethers.Contract(address, ERC20.abi, signer);
-                    const decimals = await contract.decimals();
-                    toast.success(`Decimals: ${decimals}`);
-                } catch (e) {
-                    handleError(e);
-                }
+            try {
+                const contract = new ethers.Contract(address, ERC20.abi, signer);
+                const decimals = await contract.decimals();
+                toast.success(`Decimals: ${decimals}`);
+            } catch (e) {
+                handleError(e);
             }
         },
         getTotalSupply: async (address: string) => {
-            {
-                if (!await checkNetwork()) return;
+            if (!await checkNetwork()) return;
 
-                if (address === "") {
-                    toast.error("Address cannot be empty");
-                    return;
-                }
+            if (address === "") {
+                toast.error("Address cannot be empty");
+                return;
+            }
 
-                try {
-                    const contract = new ethers.Contract(address, ERC20.abi, signer);
-                    const totalSupply = await contract.totalSupply();
-                    toast.success(`Total Supply: ${totalSupply.div(BigNumber.from(10).pow(await contract.decimals()))} ${await contract.symbol()} (${totalSupply})`);
-                } catch (e) {
-                    handleError(e);
-                }
+            try {
+                const contract = new ethers.Contract(address, ERC20.abi, signer);
+                const totalSupply = await contract.totalSupply();
+                toast.success(`Total Supply: ${totalSupply.div(BigNumber.from(10).pow(await contract.decimals()))} ${await contract.symbol()} (${totalSupply})`);
+            } catch (e) {
+                handleError(e);
+            }
+        },
+        mint: async (contractAddress: string, to: string, amount: string) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (to === "") {
+                toast.error("To Address cannot be empty");
+                return;
+            }
+
+            if (amount === "") {
+                toast.error("Amount cannot be empty");
+                return;
+            }
+
+            try {
+                const contract = new ethers.Contract(contractAddress, ERC20.abi, signer);
+                const tx = contract.mint(to, ethers.utils.parseEther(amount));
+                await toast.promise(
+                    tx,
+                    {
+                        pending: `Minting ${amount} ${await contract.symbol()} to ${to}...`,
+                        success: {
+                            render({ data }) {
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            }
+                        }
+                    }
+                ).then(async (tx) => {
+                    await toast.promise(
+                        (tx as ethers.providers.TransactionResponse).wait(),
+                        {
+                            pending: `Waiting for transaction...`,
+                            success: "Transaction confirmed"
+                        }
+                    ).catch((e) => {
+                        throw e;
+                    });
+                }, (e) => {
+                    throw e;
+                });
+            } catch (e) {
+                handleError(e);
+            }
+        },
+        burnFrom: async (contractAddress: string, account: string, amount: string) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (account === "") {
+                toast.error("Account Address cannot be empty");
+                return;
+            }
+
+            if (amount === "") {
+                toast.error("Amount cannot be empty");
+                return;
+            }
+
+            try {
+                const contract = new ethers.Contract(contractAddress, ERC20.abi, signer);
+                const tx = contract.burnFrom(account, ethers.utils.parseEther(amount));
+                await toast.promise(
+                    tx,
+                    {
+                        pending: `Burning ${amount} ${await contract.symbol()} from ${account}...`,
+                        success: {
+                            render({ data }) {
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            }
+                        }
+                    }
+                ).then(async (tx) => {
+                    await toast.promise(
+                        (tx as ethers.providers.TransactionResponse).wait(),
+                        {
+                            pending: `Waiting for transaction...`,
+                            success: "Transaction confirmed"
+                        }
+                    ).catch((e) => {
+                        throw e;
+                    });
+                }, (e) => {
+                    throw e;
+                });
+            } catch (e) {
+                handleError(e);
             }
         },
         deploy: async (owner: string, name: string, symbol: string, initSupply: string) => {
@@ -2287,6 +2375,33 @@ export default function Governance() {
                         <input type="text" placeholder="Initial Supply" id="erc20-deploy-init-supply" />
                     </div>
                     <button className="ts-button" onClick={async () => await ERC20.deploy((document.getElementById("erc20-deploy-owner") as HTMLInputElement).value, (document.getElementById("erc20-deploy-name") as HTMLInputElement).value, (document.getElementById("erc20-deploy-symbol") as HTMLInputElement).value, (document.getElementById("erc20-deploy-init-supply") as HTMLInputElement).value)}>Deploy ERC20 Token</button>
+                </div>
+                <br></br>
+                <p>Write</p>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Token Address" id="erc20-write-mint-address" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Mint To" id="erc20-write-mint-to" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Value" id="erc20-write-mint-value" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await ERC20.mint((document.getElementById("erc20-write-mint-address") as HTMLInputElement).value, (document.getElementById("erc20-write-mint-to") as HTMLInputElement).value, (document.getElementById("erc20-write-mint-value") as HTMLInputElement).value)}>Mint</button>
+                </div>
+                <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Token Address" id="erc20-write-burn-address" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Burn From" id="erc20-write-burn-from" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Value" id="erc20-write-burn-value" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await ERC20.burnFrom((document.getElementById("erc20-write-burn-address") as HTMLInputElement).value, (document.getElementById("erc20-write-burn-from") as HTMLInputElement).value, (document.getElementById("erc20-write-burn-value") as HTMLInputElement).value)}>Burn From</button>
                 </div>
                 <br></br>
                 <p>Contract Read</p>
