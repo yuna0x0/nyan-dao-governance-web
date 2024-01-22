@@ -1795,6 +1795,50 @@ export default function Governance() {
                 handleError(e);
             }
         },
+        voteOnWorkingGroupProposal: async (contractAddress: string, proposalId: string, vote: Vote) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (proposalId === "") {
+                toast.error("Proposal ID cannot be empty");
+                return;
+            }
+
+            try {
+                const workingGroupSystem = new ethers.Contract(contractAddress, WORKING_GROUP_SYSTEM_ABI, signer);
+                const tx = workingGroupSystem.voteOnWorkingGroupProposal(proposalId, vote);
+
+                await toast.promise(
+                    tx,
+                    {
+                        pending: `Voting on Working Group Proposal...`,
+                        success: {
+                            render({ data }) {
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            }
+                        }
+                    }
+                ).then(async (tx) => {
+                    await toast.promise(
+                        (tx as ethers.providers.TransactionResponse).wait(),
+                        {
+                            pending: `Waiting for transaction...`,
+                            success: "Transaction confirmed"
+                        }
+                    ).catch((e) => {
+                        throw e;
+                    });
+                }, (e) => {
+                    throw e;
+                });
+            } catch (e) {
+                handleError(e);
+            }
+        },
         deploy: async (
             safeAccountAddress: string,
             stewardSystemAddress: string,
@@ -2472,12 +2516,32 @@ export default function Governance() {
                         await WorkingGroupSystem.proposeWorkingGroup((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, action, targetAddress, newExpireTimestamp, allowance);
                     }}>Create Working Group Proposal</button>
                 </div>
-                {/* <br></br>
+                <br></br>
                 <div className="ts-grid">
                     <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="Proposal ID" id="steward-features-working-group-proposal-id" />
                     </div>
-                </div> */}
+                    <div className="ts-select">
+                        <select id="steward-features-working-group-proposal-action" defaultValue="">
+                            <option value="">Vote</option>
+                            <option value="abstain">Abstain</option>
+                            <option value="approve">Approve</option>
+                            <option value="reject">Reject</option>
+                        </select>
+                    </div>
+                    <button className="ts-button" onClick={async () => {
+                        let vote;
+                        if ((document.getElementById("steward-features-working-group-proposal-action") as HTMLSelectElement).value == "abstain")
+                            vote = Vote.Abstain;
+                        else if ((document.getElementById("steward-features-working-group-proposal-action") as HTMLSelectElement).value == "approve")
+                            vote = Vote.Approve;
+                        else if ((document.getElementById("steward-features-working-group-proposal-action") as HTMLSelectElement).value == "reject")
+                            vote = Vote.Reject;
+                        else
+                            return;
+                        await WorkingGroupSystem.voteOnWorkingGroupProposal((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, (document.getElementById("steward-features-working-group-proposal-id") as HTMLInputElement).value, vote);
+                    }}></button>
+                </div>
                 {/* <br></br>
                 <p>Steward Proposal</p>
                 <div className="ts-grid">
