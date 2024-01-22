@@ -35,7 +35,9 @@ import {
     OZ_GOVERNOR_BYTECODE,
     OZ_GOVERNOR_ABI,
     STEWARD_SYSTEM_BYTECODE,
-    STEWARD_SYSTEM_ABI
+    STEWARD_SYSTEM_ABI,
+    WORKING_GROUP_SYSTEM_BYTECODE,
+    WORKING_GROUP_SYSTEM_ABI
 } from "../constants";
 
 export default function Governance() {
@@ -216,6 +218,22 @@ export default function Governance() {
             handleError(e);
         }
     };
+
+    const getBalanceOf = async (address: string) => {
+        if (!await checkNetwork()) return;
+
+        if (address === "") {
+            toast.error("Address cannot be empty");
+            return;
+        }
+
+        try {
+            const balance = await signer?.provider?.getBalance(address);
+            toast.success(`Balance of ${address}: ${ethers.utils.formatEther(balance!)} ${chain?.nativeCurrency.symbol}`);
+        } catch (e) {
+            handleError(e);
+        }
+    }
 
     const signMessage = async () => {
         if (!await checkNetwork()) return;
@@ -1614,6 +1632,122 @@ export default function Governance() {
     };
     //#endregion Steward System
 
+    //#region Working Group System
+    const WorkingGroupSystem = {
+        deploy: async (
+            safeAccountAddress: string,
+            stewardSystemAddress: string,
+            workingGroupAddresses: string,
+            workingGroupExpireTimestamps: string,
+            workingGroupAllowances: string,
+            workingGroupProposalVoteDuration: string,
+            owner: string) => {
+            if (!await checkNetwork()) return;
+
+            if (safeAccountAddress === "") {
+                toast.error("Safe Account Address cannot be empty");
+                return;
+            }
+
+            if (stewardSystemAddress === "") {
+                toast.error("Steward System Address cannot be empty");
+                return;
+            }
+
+            if (workingGroupAddresses === "") {
+                toast.error("Working Group Addresses cannot be empty");
+                return;
+            }
+
+            if (workingGroupExpireTimestamps === "") {
+                toast.error("Working Group Expire Timestamps cannot be empty");
+                return;
+            }
+
+            if (workingGroupAllowances === "") {
+                toast.error("Working Group Allowances cannot be empty");
+                return;
+            }
+
+            if (workingGroupProposalVoteDuration === "") {
+                toast.error("Working Group Proposal Vote Duration cannot be empty");
+                return;
+            }
+
+            if (owner === "") {
+                toast.error("Owner cannot be empty");
+                return;
+            }
+
+            let workingGroupAddressesArray: string[] = [];
+            workingGroupAddresses.split(",").forEach((workingGroupAddress) => {
+                workingGroupAddressesArray.push(workingGroupAddress.trim());
+            });
+
+            let workingGroupExpireTimestampsArray: string[] = [];
+            workingGroupExpireTimestamps.split(",").forEach((workingGroupExpireTimestamp) => {
+                workingGroupExpireTimestampsArray.push(workingGroupExpireTimestamp.trim());
+            });
+
+            let workingGroupAllowancesArray: string[] = [];
+            workingGroupAllowances.split(",").forEach((workingGroupAllowance) => {
+                workingGroupAllowancesArray.push(workingGroupAllowance.trim());
+            });
+
+            try {
+                const factory = new ethers.ContractFactory(WORKING_GROUP_SYSTEM_ABI, WORKING_GROUP_SYSTEM_BYTECODE, signer);
+                const tx = factory.deploy(safeAccountAddress, stewardSystemAddress, workingGroupAddressesArray, workingGroupExpireTimestampsArray, workingGroupAllowancesArray, workingGroupProposalVoteDuration, owner);
+
+                let deployedAddress: string | undefined;
+
+                await toast.promise(
+                    tx,
+                    {
+                        pending: `Deploying Working Group System...`,
+                        success: {
+                            render({ data }) {
+                                return toastSuccessContractDeployTx(data);
+                            }
+                        },
+                        error: {
+                            render({ data }) {
+                                return `${(data as any).message}`;
+                            }
+                        }
+                    }
+                ).then(async (contract) => {
+                    await toast.promise(
+                        contract.deployTransaction.wait(),
+                        {
+                            pending: `Waiting for deployment...`,
+                            success: {
+                                render({ data }) {
+                                    return toastSuccessContractDeployed(data);
+                                }
+                            },
+                            error: {
+                                render({ data }) {
+                                    return `${(data as any).message}`;
+                                }
+                            }
+                        }
+                    ).then((transactionReceipt) => {
+                        deployedAddress = transactionReceipt.contractAddress;
+                    }, (e) => {
+                        throw e;
+                    });
+                }, (e) => {
+                    throw e;
+                });
+
+                return deployedAddress;
+            } catch (e) {
+                handleError(e);
+            }
+        }
+    };
+    //#endregion Working Group System
+
     return (
         <div>
             {chain !== undefined && <p>Connected to {chain.name} ({chain.chainId})</p>}
@@ -1627,6 +1761,15 @@ export default function Governance() {
                     <button className="ts-button" onClick={async () => await getBalance()}>Get Balance</button>
                     <br></br>
                     {balance !== "" && <span>{balance}</span>}
+                </div>
+                <br></br>
+                <div>
+                    <div className="ts-grid">
+                        <div className="ts-input column is-5-wide">
+                            <input type="text" placeholder="Address" id="eth-get-balance-of" />
+                        </div>
+                        <button className="ts-button" onClick={async () => await getBalanceOf((document.getElementById("eth-get-balance-of") as HTMLInputElement).value)}>Get Balance Of</button>
+                    </div>
                 </div>
                 <br></br>
                 <div>
@@ -2058,6 +2201,7 @@ export default function Governance() {
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion" open>
                 <summary><strong>Founder Features</strong></summary>
+                <p>Steward System Deployment</p>
                 <div className="ts-grid">
                     <div className="ts-input column is-5-wide">
                         <input type="text" placeholder="Steward Addresses (use &quot;,&quot; to split address)" id="founder-features-steward-addresses" />
@@ -2072,6 +2216,32 @@ export default function Governance() {
                         <input type="text" placeholder="Steward System Owner Address" id="founder-features-steward-owner" />
                     </div>
                     <button className="ts-button" onClick={async () => await StewardSystem.deploy((document.getElementById("founder-features-steward-addresses") as HTMLInputElement).value, (document.getElementById("founder-features-steward-expire-timestamps") as HTMLInputElement).value, (document.getElementById("founder-features-steward-proposal-vote-duration") as HTMLInputElement).value, (document.getElementById("founder-features-steward-owner") as HTMLInputElement).value)}>Deploy Steward System</button>
+                </div>
+                <br></br>
+                <p>Working Group System Deployment</p>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Safe Account Address" id="founder-features-working-group-safe-account-address" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Steward System Address" id="founder-features-working-group-steward-system-address" />
+                    </div>
+                    <div className="ts-input column is-6-wide">
+                        <input type="text" placeholder="Working Group Addresses (use &quot;,&quot; to split address)" id="founder-features-working-group-addresses" />
+                    </div>
+                    <div className="ts-input column is-6-wide">
+                        <input type="text" placeholder="Working Group Expire Timestamps (use &quot;,&quot; to split timestamp)" id="founder-features-working-group-expire-timestamps" />
+                    </div>
+                    <div className="ts-input column is-6-wide">
+                        <input type="text" placeholder="Working Group Allowances (use &quot;,&quot; to split allowance)" id="founder-features-working-group-allowances" />
+                    </div>
+                    <div className="ts-input column is-6-wide">
+                        <input type="text" placeholder="Working Group Proposal Vote Duration (in seconds)" id="founder-features-working-group-proposal-vote-duration" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Working Group System Owner Address" id="founder-features-working-group-owner" />
+                    </div>
+                    <button className="ts-button" onClick={async () => await WorkingGroupSystem.deploy((document.getElementById("founder-features-working-group-safe-account-address") as HTMLInputElement).value, (document.getElementById("founder-features-working-group-steward-system-address") as HTMLInputElement).value, (document.getElementById("founder-features-working-group-addresses") as HTMLInputElement).value, (document.getElementById("founder-features-working-group-expire-timestamps") as HTMLInputElement).value, (document.getElementById("founder-features-working-group-allowances") as HTMLInputElement).value, (document.getElementById("founder-features-working-group-proposal-vote-duration") as HTMLInputElement).value, (document.getElementById("founder-features-working-group-owner") as HTMLInputElement).value)}>Deploy Working Group System</button>
                 </div>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
