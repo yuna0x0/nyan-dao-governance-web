@@ -1543,8 +1543,45 @@ export default function Governance() {
     };
     //#endregion DAO Deployment
 
+    const enum Vote {
+        Abstain,
+        Approve,
+        Reject
+    }
+
     //#region Steward System
+    const enum StewardStatus {
+        NotExist,
+        Valid,
+        Expired
+    }
+
+    const enum StewardAction {
+        Set,
+        Remove
+    }
+
     const StewardSystem = {
+        getSteward: async (contractAddress: string, targetAddress: string) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (targetAddress === "") {
+                toast.error("Target Address cannot be empty");
+                return;
+            }
+
+            try {
+                const stewardSystem = new ethers.Contract(contractAddress, STEWARD_SYSTEM_ABI, signer);
+                return await stewardSystem.getSteward(targetAddress);
+            } catch (e) {
+                handleError(e);
+            }
+        },
         deploy: async (stewardAddresses: string, stewardExpireTimestamps: string, stewardProposalVoteDuration: string, owner: string) => {
             if (!await checkNetwork()) return;
 
@@ -1630,10 +1667,134 @@ export default function Governance() {
             }
         }
     };
+
+    // StewardSystem.isSelfSteward("0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0");
+    // Working Group: 0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE
+
     //#endregion Steward System
 
     //#region Working Group System
+    const enum WorkingGroupStatus {
+        NotExist,
+        Valid,
+        Expired
+    }
+
+    const enum WorkingGroupAction {
+        Set,
+        Remove
+    }
+
     const WorkingGroupSystem = {
+        getWorkingGroups: async (contractAddress: string) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            try {
+                const workingGroupSystem = new ethers.Contract(contractAddress, WORKING_GROUP_SYSTEM_ABI, signer);
+                return await workingGroupSystem.getWorkingGroups();
+            } catch (e) {
+                handleError(e);
+            }
+        },
+        getAllowance: async (contractAddress: string, workingGroupAddress: string) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (workingGroupAddress === "") {
+                toast.error("Working Group Address cannot be empty");
+                return;
+            }
+
+            try {
+                const workingGroupSystem = new ethers.Contract(contractAddress, WORKING_GROUP_SYSTEM_ABI, signer);
+                return await workingGroupSystem.allowance(workingGroupAddress);
+            } catch (e) {
+                handleError(e);
+            }
+        },
+        getWorkingGroup: async (contractAddress: string, targetAddress: string) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (targetAddress === "") {
+                toast.error("Target Address cannot be empty");
+                return;
+            }
+
+            try {
+                const workingGroupSystem = new ethers.Contract(contractAddress, WORKING_GROUP_SYSTEM_ABI, signer);
+                return await workingGroupSystem.getWorkingGroup(targetAddress);
+            } catch (e) {
+                handleError(e);
+            }
+        },
+        proposeWorkingGroup: async (contractAddress: string, workingGroupAction: WorkingGroupAction, targetAddress: string, expireTimestamp: string, allowance: string) => {
+            if (!await checkNetwork()) return;
+
+            if (contractAddress === "") {
+                toast.error("Contract Address cannot be empty");
+                return;
+            }
+
+            if (targetAddress === "") {
+                toast.error("Target Address cannot be empty");
+                return;
+            }
+
+            if (expireTimestamp === "") {
+                toast.error("Expire Timestamp cannot be empty");
+                return;
+            }
+
+            if (allowance === "") {
+                toast.error("Allowance cannot be empty");
+                return;
+            }
+
+            try {
+                const workingGroupSystem = new ethers.Contract(contractAddress, WORKING_GROUP_SYSTEM_ABI, signer);
+                const tx = workingGroupSystem.proposeWorkingGroup(workingGroupAction, targetAddress, expireTimestamp, allowance);
+
+                await toast.promise(
+                    tx,
+                    {
+                        pending: `Proposing Working Group...`,
+                        success: {
+                            render({ data }) {
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            }
+                        }
+                    }
+                ).then(async (tx) => {
+                    await toast.promise(
+                        (tx as ethers.providers.TransactionResponse).wait(),
+                        {
+                            pending: `Waiting for transaction...`,
+                            success: "Transaction confirmed"
+                        }
+                    ).catch((e) => {
+                        throw e;
+                    });
+                }, (e) => {
+                    throw e;
+                });
+            } catch (e) {
+                handleError(e);
+            }
+        },
         deploy: async (
             safeAccountAddress: string,
             stewardSystemAddress: string,
@@ -2247,16 +2408,92 @@ export default function Governance() {
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion" open>
                 <summary><strong>Steward Features</strong></summary>
+                <div className="ts-grid">
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Steward System Address" id="steward-features-system-address" />
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Working Group System Address" id="steward-features-working-group-address" />
+                    </div>
+                </div>
+                <br></br>
+                <div className="ts-grid">
+                    <button className="ts-button" onClick={async () => {
+                        const stewardData = await StewardSystem.getSteward((document.getElementById("steward-features-system-address") as HTMLInputElement).value, address!);
+                        const isSteward = stewardData[0] === StewardStatus.Valid;
+                        if (isSteward)
+                            toast.info(`You are a steward. Steward Expire Date: ${new Date((stewardData[1] * 1000))} (${stewardData[1].toString()})`);
+                        else
+                            toast.info("You are not a steward.");
+                    }}>Connect Steward</button>
+                </div>
+                <br></br>
+                <div className="ts-grid">
+                    <button className="ts-button" onClick={async () => {
+                        const workingGroups = await WorkingGroupSystem.getWorkingGroups((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value);
+                        workingGroups.forEach(async (workingGroup: string) => {
+                            const allowance = await WorkingGroupSystem.getAllowance((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, workingGroup);
+                            const workingGroupData = await WorkingGroupSystem.getWorkingGroup((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, workingGroup);
+                            console.log(workingGroupData[1]);
+                            toast.info(`${workingGroup} / ${allowance} ${chain?.nativeCurrency.symbol} / ${new Date((workingGroupData[1] * 1000))} (${workingGroupData[1].toString()})`);
+                        });
+                    }}>Get Working Groups / Allowance / Expire Date</button>
+                </div>
+                <br></br>
+                <p>Working Group Proposal</p>
+                <div className="ts-grid">
+                    <div className="ts-select">
+                        <select id="steward-features-working-group-proposal-action" defaultValue="">
+                            <option value="">Action</option>
+                            <option value="set">Set</option>
+                            <option value="remove">Remove</option>
+                        </select>
+                    </div>
+                    <div className="ts-input column is-5-wide">
+                        <input type="text" placeholder="Target Address" id="steward-features-working-group-proposal-target-address" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="New Expire Timestamp" id="steward-features-working-group-new-expire-timestamp" />
+                    </div>
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Allowance" id="steward-features-working-group-allowance" />
+                    </div>
+                    <button className="ts-button" onClick={async () => {
+                        let action;
+                        if ((document.getElementById("steward-features-working-group-proposal-action") as HTMLSelectElement).value == "set")
+                            action = WorkingGroupAction.Set;
+                        else if ((document.getElementById("steward-features-working-group-proposal-action") as HTMLSelectElement).value == "remove")
+                            action = WorkingGroupAction.Remove;
+                        else
+                            return;
+                        const targetAddress = (document.getElementById("steward-features-working-group-proposal-target-address") as HTMLInputElement).value;
+                        const newExpireTimestamp = (document.getElementById("steward-features-working-group-new-expire-timestamp") as HTMLInputElement).value;
+                        const allowance = (document.getElementById("steward-features-working-group-allowance") as HTMLInputElement).value;
+                        await WorkingGroupSystem.proposeWorkingGroup((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, action, targetAddress, newExpireTimestamp, allowance);
+                    }}>Create Working Group Proposal</button>
+                </div>
+                {/* <br></br>
+                <div className="ts-grid">
+                    <div className="ts-input column is-3-wide">
+                        <input type="text" placeholder="Proposal ID" id="steward-features-working-group-proposal-id" />
+                    </div>
+                </div> */}
+                {/* <br></br>
+                <p>Steward Proposal</p>
+                <div className="ts-grid">
+
+                </div> */}
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion" open>
+            {/* <details className="ts-accordion" open>
                 <summary><strong>Working Group Features</strong></summary>
             </details>
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion" open>
                 <summary><strong>Token Holder Features</strong></summary>
-            </details>
+            </details> */}
             <div className="has-vertically-spaced"></div>
+
         </div >
     );
 }
