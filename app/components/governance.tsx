@@ -2875,9 +2875,9 @@ export default function Governance() {
                     <button className="ts-button" onClick={async () => {
                         let action;
                         if ((document.getElementById("steward-features-steward-proposal-action") as HTMLSelectElement).value == "set")
-                            action = WorkingGroupAction.Set;
+                            action = StewardAction.Set;
                         else if ((document.getElementById("steward-features-steward-proposal-action") as HTMLSelectElement).value == "remove")
-                            action = WorkingGroupAction.Remove;
+                            action = StewardAction.Remove;
                         else
                             return;
                         const targetAddress = (document.getElementById("steward-features-steward-proposal-target-address") as HTMLInputElement).value;
