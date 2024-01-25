@@ -285,14 +285,11 @@ export default function Governance() {
                         render({ data }) {
                             return toastSuccessTx(data);
                         }
-                    },
-                    error: {
-                        render({ data }) {
-                            return `${(data as any).message}`;
-                        }
                     }
                 }
-            )
+            ).catch((e) => {
+                throw e;
+            });
         } catch (e) {
             handleError(e);
         }
@@ -348,14 +345,11 @@ export default function Governance() {
                         render({ data }) {
                             return toastSuccessTx(data as ethers.providers.TransactionResponse);
                         }
-                    },
-                    error: {
-                        render({ data }) {
-                            return `${(data as any).message}`;
-                        }
                     }
                 }
-            )
+            ).catch((e) => {
+                throw e;
+            });
         } catch (e) {
             handleError(e);
         }
@@ -389,14 +383,11 @@ export default function Governance() {
                         render({ data }) {
                             return toastSuccessTx(data as ethers.providers.TransactionResponse);
                         }
-                    },
-                    error: {
-                        render({ data }) {
-                            return `${(data as any).message}`;
-                        }
                     }
                 }
-            )
+            ).catch((e) => {
+                throw e;
+            });
         } catch (e) {
             handleError(e);
         }
@@ -435,14 +426,11 @@ export default function Governance() {
                         render({ data }) {
                             return toastSuccessTx(data as ethers.providers.TransactionResponse);
                         }
-                    },
-                    error: {
-                        render({ data }) {
-                            return `${(data as any).message}`;
-                        }
                     }
                 }
-            )
+            ).catch((e) => {
+                throw e;
+            });
         } catch (e) {
             handleError(e);
         }
@@ -481,14 +469,11 @@ export default function Governance() {
                         render({ data }) {
                             return toastSuccessTx(data as ethers.providers.TransactionResponse);
                         }
-                    },
-                    error: {
-                        render({ data }) {
-                            return `${(data as any).message}`;
-                        }
                     }
                 }
-            )
+            ).catch((e) => {
+                throw e;
+            });
         } catch (e) {
             handleError(e);
         }
@@ -532,14 +517,11 @@ export default function Governance() {
                         render({ data }) {
                             return toastSuccessTx(data as ethers.providers.TransactionResponse);
                         }
-                    },
-                    error: {
-                        render({ data }) {
-                            return `${(data as any).message}`;
-                        }
                     }
                 }
-            )
+            ).catch((e) => {
+                throw e;
+            });
         } catch (e) {
             handleError(e);
         }
@@ -849,11 +831,6 @@ export default function Governance() {
                             render({ data }) {
                                 return toastSuccessContractDeployTx(data);
                             }
-                        },
-                        error: {
-                            render({ data }) {
-                                return `${(data as any).message}`;
-                            }
                         }
                     }
                 ).then(async (contract) => {
@@ -864,11 +841,6 @@ export default function Governance() {
                             success: {
                                 render({ data }) {
                                     return toastSuccessContractDeployed(data);
-                                }
-                            },
-                            error: {
-                                render({ data }) {
-                                    return `${(data as any).message}`;
                                 }
                             }
                         }
@@ -963,11 +935,6 @@ export default function Governance() {
                             render({ data }) {
                                 return toastSuccessContractDeployTx(data);
                             }
-                        },
-                        error: {
-                            render({ data }) {
-                                return `${(data as any).message}`;
-                            }
                         }
                     }
                 ).then(async (contract) => {
@@ -978,11 +945,6 @@ export default function Governance() {
                             success: {
                                 render({ data }) {
                                     return toastSuccessContractDeployed(data);
-                                }
-                            },
-                            error: {
-                                render({ data }) {
-                                    return `${(data as any).message}`;
                                 }
                             }
                         }
@@ -1070,11 +1032,6 @@ export default function Governance() {
                             render({ data }) {
                                 return toastSuccessContractDeployTx(data);
                             }
-                        },
-                        error: {
-                            render({ data }) {
-                                return `${(data as any).message}`;
-                            }
                         }
                     }
                 ).then(async (contract) => {
@@ -1085,11 +1042,6 @@ export default function Governance() {
                             success: {
                                 render({ data }) {
                                     return toastSuccessContractDeployed(data);
-                                }
-                            },
-                            error: {
-                                render({ data }) {
-                                    return `${(data as any).message}`;
                                 }
                             }
                         }
@@ -1700,11 +1652,6 @@ export default function Governance() {
                             render({ data }) {
                                 return toastSuccessTx(data as ethers.providers.TransactionResponse);
                             }
-                        },
-                        error: {
-                            render({ data }) {
-                                return `${(data as any).message}`;
-                            }
                         }
                     }
                 ).then(async (tx) => {
@@ -1749,11 +1696,6 @@ export default function Governance() {
                             render({ data }) {
                                 return toastSuccessTx(data as ethers.providers.TransactionResponse);
                             }
-                        },
-                        error: {
-                            render({ data }) {
-                                return `${(data as any).message}`;
-                            }
                         }
                     }
                 ).then(async (tx) => {
@@ -1797,11 +1739,6 @@ export default function Governance() {
                         success: {
                             render({ data }) {
                                 return toastSuccessTx(data as ethers.providers.TransactionResponse);
-                            }
-                        },
-                        error: {
-                            render({ data }) {
-                                return `${(data as any).message}`;
                             }
                         }
                     }
@@ -1869,11 +1806,6 @@ export default function Governance() {
                             render({ data }) {
                                 return toastSuccessContractDeployTx(data);
                             }
-                        },
-                        error: {
-                            render({ data }) {
-                                return `${(data as any).message}`;
-                            }
                         }
                     }
                 ).then(async (contract) => {
@@ -1884,11 +1816,6 @@ export default function Governance() {
                             success: {
                                 render({ data }) {
                                     return toastSuccessContractDeployed(data);
-                                }
-                            },
-                            error: {
-                                render({ data }) {
-                                    return `${(data as any).message}`;
                                 }
                             }
                         }
@@ -2193,11 +2120,6 @@ export default function Governance() {
                             render({ data }) {
                                 return toastSuccessContractDeployTx(data);
                             }
-                        },
-                        error: {
-                            render({ data }) {
-                                return `${(data as any).message}`;
-                            }
                         }
                     }
                 ).then(async (contract) => {
@@ -2208,11 +2130,6 @@ export default function Governance() {
                             success: {
                                 render({ data }) {
                                     return toastSuccessContractDeployed(data);
-                                }
-                            },
-                            error: {
-                                render({ data }) {
-                                    return `${(data as any).message}`;
                                 }
                             }
                         }
@@ -2864,7 +2781,7 @@ export default function Governance() {
                         </select>
                     </div>
                     <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Target Address" id="steward-features-stewardp-proposal-target-address" />
+                        <input type="text" placeholder="Target Address" id="steward-features-steward-proposal-target-address" />
                     </div>
                     <div className="ts-input column is-3-wide">
                         <input type="text" placeholder="New Expire Timestamp" id="steward-features-steward-new-expire-timestamp" />
