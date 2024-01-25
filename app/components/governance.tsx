@@ -2789,7 +2789,6 @@ export default function Governance() {
                         workingGroups.forEach(async (workingGroup: string) => {
                             const allowance = await WorkingGroupSystem.getAllowance((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, workingGroup);
                             const workingGroupData = await WorkingGroupSystem.getWorkingGroup((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, workingGroup);
-                            console.log(workingGroupData[1]);
                             toast.info(`${workingGroup} / ${allowance} ${chain?.nativeCurrency.symbol} / ${new Date((workingGroupData[1] * 1000))} (${workingGroupData[1].toString()})`);
                         });
                     }}>Get Working Groups / Allowance / Expire Date</button>
