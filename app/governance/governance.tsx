@@ -11,7 +11,7 @@ import {
 import { ethers, BigNumber } from "ethers";
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import { BaseGoerli } from "@thirdweb-dev/chains";
+import type { Chain } from "@thirdweb-dev/chains";
 import ozOwnable from "@openzeppelin/contracts/build/contracts/Ownable.json";
 import { EthersAdapter, ContractNetworksConfig, SafeFactory, SafeAccountConfig, SafeTransactionOptionalProps } from '@safe-global/protocol-kit';
 import Safe from '@safe-global/protocol-kit';
@@ -27,7 +27,6 @@ import {
     DEFAULT_SAFE_FACTORY_SIGN_MESSAGE_LIB_ADDRESS,
     DEFAULT_SAFE_FACTORY_CREATE_CALL_ADDRESS,
     DEFAULT_SAFE_FACTORY_SIMULATE_TX_ACCESSOR_ADDRESS,
-    BASE_GOERLI_WETH_ADDRESS,
     ERC20_BYTECODE,
     ERC20_ABI,
     OZ_TIMELOCK_BYTECODE,
@@ -39,6 +38,68 @@ import {
     WORKING_GROUP_SYSTEM_BYTECODE,
     WORKING_GROUP_SYSTEM_ABI
 } from "../constants";
+import Eth from "./components/eth";
+import Weth from "./components/weth";
+
+//#region NetworkCheckFunctions
+export const isVaildNetwork = (
+    chain: Chain | undefined,
+    supportedChains: Chain[]) => {
+    if (chain === undefined) return false;
+
+    const isNetworkSupported = supportedChains.some((supportedChain) => {
+        return supportedChain.chainId === chain.chainId;
+    });
+
+    return isNetworkSupported;
+};
+
+export const checkNetwork = async (
+    chain: Chain | undefined,
+    supportedChains: Chain[],
+    switchChain: (chain: number) => Promise<void>) => {
+    if (!isVaildNetwork(chain, supportedChains)) {
+        try {
+            await switchChain(supportedChains[0].chainId);
+            return true;
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
+    }
+    return true;
+};
+//#endregion NetworkCheckFunctions
+
+//#region ErrorHandling
+export const handleError = (e: any) => {
+    console.error(e);
+    toast.error(`${e}`);
+};
+//#endregion ErrorHandling
+
+//#region Toast Callback
+export const toastSuccessTx = (data: ethers.providers.TransactionResponse, chainExplorerUrl?: string) => {
+    if (chainExplorerUrl !== undefined)
+        return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${data.hash}`} target="_blank" rel="noreferrer">{data.hash}</a></div>;
+    else
+        return `Tx Hash: ${data.hash}`;
+};
+
+export const toastSuccessContractDeployTx = (data: ethers.Contract, chainExplorerUrl?: string) => {
+    if (chainExplorerUrl !== undefined)
+        return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${data.deployTransaction.hash}`} target="_blank" rel="noreferrer">{data.deployTransaction.hash}</a></div>;
+    else
+        return `Tx Hash: ${data.deployTransaction.hash}`;
+};
+
+export const toastSuccessContractDeployed = (data: ethers.providers.TransactionReceipt, chainExplorerUrl?: string) => {
+    if (chainExplorerUrl !== undefined)
+        return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${data.contractAddress}`} target="_blank" rel="noreferrer">{data.contractAddress}</a></div>;
+    else
+        return `Deployed Contract Address: ${data.contractAddress}`;
+};
+//#endregion Toast Callback
 
 export default function Governance() {
     //#region Init
@@ -52,51 +113,8 @@ export default function Governance() {
 
     const switchChain = useSwitchChain();
 
-    const [lastChainId, setLastChainId] = useState<number | undefined>(undefined);
-    const [lastAddress, setLastAddress] = useState<string | undefined>(undefined);
-
     const [safeIsL1Singleton, setSafeIsL1Singleton] = useState(false);
     const [customSafeFactory, setCustomSafeFactory] = useState(false);
-
-    const [balance, setBalance] = useState("");
-    const [signedMessage, setSignedMessage] = useState("");
-    const [wethBalance, setWETHBalance] = useState("");
-
-    const clearState = () => {
-        if (lastChainId !== undefined) setLastChainId(undefined);
-        if (lastAddress !== undefined) setLastAddress(undefined);
-
-        if (safeIsL1Singleton !== false) setSafeIsL1Singleton(false);
-        if (customSafeFactory !== false) setCustomSafeFactory(false);
-
-        if (balance !== "") setBalance("");
-        if (signedMessage !== "") setSignedMessage("");
-        if (wethBalance !== "") setWETHBalance("");
-    };
-
-    const isVaildNetwork = () => {
-        if (chain === undefined) return false;
-
-        const isNetworkSupported = supportedChains.some((supportedChain) => {
-            return supportedChain.chainId === chain.chainId;
-        });
-
-        return isNetworkSupported;
-    };
-
-    const checkNetwork = async () => {
-        if (!isVaildNetwork()) {
-            clearState();
-            try {
-                await switchChain(supportedChains[0].chainId);
-                return true;
-            } catch (e) {
-                console.error(e);
-                return false;
-            }
-        }
-        return true;
-    };
     //#endregion Init
 
     //#region NetworkCheck
@@ -104,77 +122,27 @@ export default function Governance() {
         case "connected":
             break;
         case "unknown":
-            clearState();
             return (<p>Loading...</p>);
         case "connecting":
-            clearState();
             return (<p>Connecting...</p>);
         case "disconnected":
-            clearState();
             return (<p>Connect wallet to access</p>);
         default:
-            clearState();
             return (<p>Unknown connection status</p>);
     }
 
-    if (!isVaildNetwork()) {
-        clearState();
+    if (!isVaildNetwork(chain, supportedChains)) {
         return (
             <div>
                 {(chain !== undefined && <p>Connected to {chain.name} ({chain.chainId})</p>) || <p>Connected to Chain ID: {chainId}</p>}
                 <p style={{ color: 'red' }}>Unsupported Chain</p>
-                <button onClick={() => { checkNetwork() }}>Switch Network</button>
+                <button onClick={() => { checkNetwork(chain, supportedChains, switchChain) }}>Switch Network</button>
             </div>
         );
     }
     //#endregion NetworkCheck
 
-    //#region StateCheck
-    if (lastChainId === undefined) {
-        setLastChainId(chain?.chainId);
-    } else if (lastChainId !== chain?.chainId) {
-        clearState();
-        setLastChainId(chain?.chainId);
-    }
-
-    if (lastAddress === undefined) {
-        setLastAddress(address);
-    } else if (lastAddress !== address) {
-        clearState();
-        setLastAddress(address);
-    }
-    //#endregion StateCheck
-
-    //#region ErrorHandling
-    const handleError = (e: any) => {
-        console.error(e);
-        toast.error(`${e}`);
-    };
-    //#endregion ErrorHandling
-
-    //#region Toast Callback
-    const toastSuccessTx = (data: ethers.providers.TransactionResponse) => {
-        if (chainExplorerUrl !== undefined)
-            return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${data.hash}`} target="_blank" rel="noreferrer">{data.hash}</a></div>;
-        else
-            return `Tx Hash: ${data.hash}`;
-    };
-
-    const toastSuccessContractDeployTx = (data: ethers.Contract) => {
-        if (chainExplorerUrl !== undefined)
-            return <div>Tx Hash: <a className="ts-text is-link" href={`${chainExplorerUrl}/tx/${data.deployTransaction.hash}`} target="_blank" rel="noreferrer">{data.deployTransaction.hash}</a></div>;
-        else
-            return `Tx Hash: ${data.deployTransaction.hash}`;
-    };
-
-    const toastSuccessContractDeployed = (data: ethers.providers.TransactionReceipt) => {
-        if (chainExplorerUrl !== undefined)
-            return <div>Deployed Contract Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${data.contractAddress}`} target="_blank" rel="noreferrer">{data.contractAddress}</a></div>;
-        else
-            return `Deployed Contract Address: ${data.contractAddress}`;
-    };
-
-    const toastSuccessDaoDeployed = (daoTimelockAddress: string, daoTokenAddress: string, daoGovernorAddress: string) => {
+    const toastSuccessDaoDeployed = (daoTimelockAddress: string, daoTokenAddress: string, daoGovernorAddress: string, chainExplorerUrl?: string) => {
         if (chainExplorerUrl !== undefined)
             return (
                 <div>
@@ -201,337 +169,17 @@ export default function Governance() {
             );
     };
 
-    const toastSuccessSafeDeployed = async (safeAddress: string) => {
+    const toastSuccessSafeDeployed = async (safeAddress: string, chainExplorerUrl?: string) => {
         if (chainExplorerUrl !== undefined)
             return <div>Deployed Safe Address: <a className="ts-text is-link" href={`${chainExplorerUrl}/address/${safeAddress}`} target="_blank" rel="noreferrer">{safeAddress}</a></div>;
         else
             return `Deployed Safe Address: ${safeAddress}`;
     };
-    //#endregion Toast Callback
-
-    //#region ETH
-    const getBalance = async () => {
-        if (!await checkNetwork()) return;
-        try {
-            setBalance(`Balance: ${ethers.utils.formatEther(await signer?.getBalance()!)} ${chain?.nativeCurrency.symbol}`);
-        } catch (e) {
-            handleError(e);
-        }
-    };
-
-    const getBalanceOf = async (address: string) => {
-        if (!await checkNetwork()) return;
-
-        if (address === "") {
-            toast.error("Address cannot be empty");
-            return;
-        }
-
-        try {
-            const balance = await signer?.provider?.getBalance(address);
-            toast.success(`Balance of ${address}: ${ethers.utils.formatEther(balance!)} ${chain?.nativeCurrency.symbol}`);
-        } catch (e) {
-            handleError(e);
-        }
-    }
-
-    const signMessage = async () => {
-        if (!await checkNetwork()) return;
-        try {
-            const signedMessage = signer!.signMessage("Hello World");
-            await toast.promise(
-                signedMessage,
-                {
-                    pending: `Signing Message...`,
-                    success: {
-                        render({ data }) {
-                            return `Signed message: ${data}`;
-                        }
-                    }
-                }
-            ).then((v) => {
-                setSignedMessage(`Signed Message: ${v}`);
-            }).catch((e) => {
-                throw e;
-            });
-        } catch (e) {
-            handleError(e);
-        }
-    };
-
-    const sendETH = async (to: string, amount: string) => {
-        if (!await checkNetwork()) return;
-
-        if (to === "") {
-            toast.error("Address cannot be empty");
-            return;
-        }
-
-        if (amount === "") {
-            toast.error("Amount cannot be empty");
-            return;
-        }
-
-        try {
-            const tx = signer!.sendTransaction({
-                to: to,
-                value: ethers.utils.parseEther(amount)
-            });
-            await toast.promise(
-                tx,
-                {
-                    pending: `Sending ${amount} ${chain?.nativeCurrency.symbol} to ${to}...`,
-                    success: {
-                        render({ data }) {
-                            return toastSuccessTx(data);
-                        }
-                    }
-                }
-            ).catch((e) => {
-                throw e;
-            });
-        } catch (e) {
-            handleError(e);
-        }
-    };
-    //#endregion ETH
-
-    //#region WETH
-    const getWETHBalance = async () => {
-        if (!await checkNetwork()) return;
-        try {
-            let wethAddress;
-            switch (chain?.chainId) {
-                case BaseGoerli.chainId:
-                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
-                    break;
-                default:
-                    toast.error("Unsupported Chain");
-                    return;
-            }
-            const wethContract = new ethers.Contract(wethAddress, ["function balanceOf(address) view returns (uint256)"], signer);
-            const balance = await wethContract.balanceOf(await signer?.getAddress());
-            setWETHBalance(`WETH Balance: ${ethers.utils.formatEther(balance)} WETH`);
-        } catch (e) {
-            handleError(e);
-        }
-    };
-
-    const wrapETH = async (amount: string) => {
-        if (!await checkNetwork()) return;
-
-        if (amount === "") {
-            toast.error("Amount cannot be empty");
-            return;
-        }
-
-        try {
-            let wethAddress;
-            switch (chain?.chainId) {
-                case BaseGoerli.chainId:
-                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
-                    break;
-                default:
-                    toast.error("Unsupported Chain");
-                    return;
-            }
-            const wethContract = new ethers.Contract(wethAddress, ["function deposit() payable"], signer);
-            const tx = wethContract.deposit({ value: ethers.utils.parseEther(amount) });
-            await toast.promise(
-                tx,
-                {
-                    pending: `Wrapping ${amount} ETH...`,
-                    success: {
-                        render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
-                        }
-                    }
-                }
-            ).catch((e) => {
-                throw e;
-            });
-        } catch (e) {
-            handleError(e);
-        }
-    };
-
-    const unwrapETH = async (amount: string) => {
-        if (!await checkNetwork()) return;
-
-        if (amount === "") {
-            toast.error("Amount cannot be empty");
-            return;
-        }
-
-        try {
-            let wethAddress;
-            switch (chain?.chainId) {
-                case BaseGoerli.chainId:
-                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
-                    break;
-                default:
-                    toast.error("Unsupported Chain");
-                    return;
-            }
-            const wethContract = new ethers.Contract(wethAddress, ["function withdraw(uint256 wad)"], signer);
-            const tx = wethContract.withdraw(ethers.utils.parseEther(amount));
-            await toast.promise(
-                tx,
-                {
-                    pending: `Unwrapping ${amount} WETH...`,
-                    success: {
-                        render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
-                        }
-                    }
-                }
-            ).catch((e) => {
-                throw e;
-            });
-        } catch (e) {
-            handleError(e);
-        }
-    };
-
-    const transferWETH = async (to: string, amount: string) => {
-        if (!await checkNetwork()) return;
-
-        if (to === "") {
-            toast.error("To Address cannot be empty");
-            return;
-        }
-
-        if (amount === "") {
-            toast.error("Amount cannot be empty");
-            return;
-        }
-
-        try {
-            let wethAddress;
-            switch (chain?.chainId) {
-                case BaseGoerli.chainId:
-                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
-                    break;
-                default:
-                    toast.error("Unsupported Chain");
-                    return;
-            }
-            const wethContract = new ethers.Contract(wethAddress, ["function transfer(address dst, uint256 wad)"], signer);
-            const tx = wethContract.transfer(to, ethers.utils.parseEther(amount));
-            await toast.promise(
-                tx,
-                {
-                    pending: `Sending ${amount} WETH to ${to}...`,
-                    success: {
-                        render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
-                        }
-                    }
-                }
-            ).catch((e) => {
-                throw e;
-            });
-        } catch (e) {
-            handleError(e);
-        }
-    };
-
-    const approveWETH = async (spender: string, amount: string) => {
-        if (!await checkNetwork()) return;
-
-        if (spender === "") {
-            toast.error("Spender cannot be empty");
-            return;
-        }
-
-        if (amount === "") {
-            toast.error("Amount cannot be empty");
-            return;
-        }
-
-        try {
-            let wethAddress;
-            switch (chain?.chainId) {
-                case BaseGoerli.chainId:
-                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
-                    break;
-                default:
-                    toast.error("Unsupported Chain");
-                    return;
-            }
-            const wethContract = new ethers.Contract(wethAddress, ["function approve(address guy, uint256 wad)"], signer);
-            const tx = wethContract.approve(spender, ethers.utils.parseEther(amount));
-            await toast.promise(
-                tx,
-                {
-                    pending: `Approving ${amount} WETH to ${spender}...`,
-                    success: {
-                        render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
-                        }
-                    }
-                }
-            ).catch((e) => {
-                throw e;
-            });
-        } catch (e) {
-            handleError(e);
-        }
-    };
-
-    const transferWETHFrom = async (from: string, to: string, amount: string) => {
-        if (!await checkNetwork()) return;
-
-        if (from === "") {
-            toast.error("From Address cannot be empty");
-            return;
-        }
-
-        if (to === "") {
-            toast.error("To Address cannot be empty");
-            return;
-        }
-
-        if (amount === "") {
-            toast.error("Amount cannot be empty");
-            return;
-        }
-
-        try {
-            let wethAddress;
-            switch (chain?.chainId) {
-                case BaseGoerli.chainId:
-                    wethAddress = BASE_GOERLI_WETH_ADDRESS;
-                    break;
-                default:
-                    toast.error("Unsupported Chain");
-                    return;
-            }
-            const wethContract = new ethers.Contract(wethAddress, ["function transferFrom(address src, address dst, uint256 wad)"], signer);
-            const tx = wethContract.transferFrom(from, to, ethers.utils.parseEther(amount));
-            await toast.promise(
-                tx,
-                {
-                    pending: `Sending ${amount} WETH from ${from} to ${to}...`,
-                    success: {
-                        render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
-                        }
-                    }
-                }
-            ).catch((e) => {
-                throw e;
-            });
-        } catch (e) {
-            handleError(e);
-        }
-    };
-    //#endregion WETH
 
     //#region OpenZeppelin Ownable
     const OZOwnable = {
         getOwner: async (address: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (address === "") {
                 toast.error("Address cannot be empty");
@@ -547,7 +195,7 @@ export default function Governance() {
             }
         },
         transferOwnership: async (address: string, newOwner: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (address === "") {
                 toast.error("Address cannot be empty");
@@ -568,7 +216,7 @@ export default function Governance() {
                         pending: `Transferring ownership to ${newOwner}...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                             }
                         }
                     }
@@ -590,7 +238,7 @@ export default function Governance() {
             }
         },
         renounceOwnership: async (address: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (address === "") {
                 toast.error("Address cannot be empty");
@@ -606,7 +254,7 @@ export default function Governance() {
                         pending: `Renouncing ownership...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                             }
                         }
                     }
@@ -635,7 +283,7 @@ export default function Governance() {
         abi: ERC20_ABI,
         bytecode: ERC20_BYTECODE,
         getName: async (address: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (address === "") {
                 toast.error("Address cannot be empty");
@@ -651,7 +299,7 @@ export default function Governance() {
             }
         },
         getSymbol: async (address: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (address === "") {
                 toast.error("Address cannot be empty");
@@ -667,7 +315,7 @@ export default function Governance() {
             }
         },
         getDecimals: async (address: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (address === "") {
                 toast.error("Address cannot be empty");
@@ -683,7 +331,7 @@ export default function Governance() {
             }
         },
         getTotalSupply: async (address: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (address === "") {
                 toast.error("Address cannot be empty");
@@ -699,7 +347,7 @@ export default function Governance() {
             }
         },
         mint: async (contractAddress: string, to: string, amount: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Contract Address cannot be empty");
@@ -725,7 +373,7 @@ export default function Governance() {
                         pending: `Minting ${amount} ${await contract.symbol()} to ${to}...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                             }
                         }
                     }
@@ -747,7 +395,7 @@ export default function Governance() {
             }
         },
         burnFrom: async (contractAddress: string, account: string, amount: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Contract Address cannot be empty");
@@ -773,7 +421,7 @@ export default function Governance() {
                         pending: `Burning ${amount} ${await contract.symbol()} from ${account}...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                             }
                         }
                     }
@@ -795,7 +443,7 @@ export default function Governance() {
             }
         },
         deploy: async (owner: string, name: string, symbol: string, initSupply: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (owner === "") {
                 toast.error("Owner cannot be empty");
@@ -829,7 +477,7 @@ export default function Governance() {
                         pending: `Deploying ERC20 Token...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessContractDeployTx(data);
+                                return toastSuccessContractDeployTx(data, chainExplorerUrl);
                             }
                         }
                     }
@@ -840,7 +488,7 @@ export default function Governance() {
                             pending: `Waiting for deployment...`,
                             success: {
                                 render({ data }) {
-                                    return toastSuccessContractDeployed(data);
+                                    return toastSuccessContractDeployed(data, chainExplorerUrl);
                                 }
                             }
                         }
@@ -867,7 +515,7 @@ export default function Governance() {
         bytecode: OZ_GOVERNOR_BYTECODE,
         getName: async (address: string) => {
             {
-                if (!await checkNetwork()) return;
+                if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
                 if (address === "") {
                     toast.error("Address cannot be empty");
@@ -884,7 +532,7 @@ export default function Governance() {
             }
         },
         deploy: async (tokenAddress: string, timelockAddress: string, governorName: string, votingDelayBlock: string, votingPeriodBlock: string, proposalThreshold: string, quorumNumerator: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (tokenAddress === "") {
                 toast.error("Token Address cannot be empty");
@@ -933,7 +581,7 @@ export default function Governance() {
                         pending: `Deploying OZ Governor...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessContractDeployTx(data);
+                                return toastSuccessContractDeployTx(data, chainExplorerUrl);
                             }
                         }
                     }
@@ -944,7 +592,7 @@ export default function Governance() {
                             pending: `Waiting for deployment...`,
                             success: {
                                 render({ data }) {
-                                    return toastSuccessContractDeployed(data);
+                                    return toastSuccessContractDeployed(data, chainExplorerUrl);
                                 }
                             }
                         }
@@ -969,7 +617,7 @@ export default function Governance() {
         bytecode: OZ_TIMELOCK_BYTECODE,
         getMinDelay: async (address: string) => {
             {
-                if (!await checkNetwork()) return;
+                if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
                 if (address === "") {
                     toast.error("Address cannot be empty");
@@ -986,7 +634,7 @@ export default function Governance() {
             }
         },
         deploy: async (minDelay: string, proposers: string, executors: string, admin: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (minDelay === "") {
                 toast.error("Minimum Delay cannot be empty");
@@ -1030,7 +678,7 @@ export default function Governance() {
                         pending: `Deploying OZ Timelock...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessContractDeployTx(data);
+                                return toastSuccessContractDeployTx(data, chainExplorerUrl);
                             }
                         }
                     }
@@ -1041,7 +689,7 @@ export default function Governance() {
                             pending: `Waiting for deployment...`,
                             success: {
                                 render({ data }) {
-                                    return toastSuccessContractDeployed(data);
+                                    return toastSuccessContractDeployed(data, chainExplorerUrl);
                                 }
                             }
                         }
@@ -1141,7 +789,7 @@ export default function Governance() {
             return true;
         },
         connect: async (safeAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (safeAddress === "") {
                 toast.error("Safe Address cannot be empty");
@@ -1158,7 +806,7 @@ export default function Governance() {
             return await Safe.create({ ethAdapter, safeAddress, isL1SafeMasterCopy: isL1SafeSingleton, contractNetworks });
         },
         getOwners: async (safeAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (safeAddress === "") {
                 toast.error("Safe Address cannot be empty");
@@ -1182,7 +830,7 @@ export default function Governance() {
             );
         },
         getThreshold: async (safeAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (safeAddress === "") {
                 toast.error("Safe Address cannot be empty");
@@ -1200,7 +848,7 @@ export default function Governance() {
             toast.success(`Threshold: ${threshold}`);
         },
         createTransaction: async (safeAddress: string, isL1SafeSingleton: boolean, transactions: MetaTransactionData[], contractNetworks?: ContractNetworksConfig, callsOnly?: boolean, options?: SafeTransactionOptionalProps) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (safeAddress === "") {
                 toast.error("Safe Address cannot be empty");
@@ -1248,7 +896,7 @@ export default function Governance() {
             return safeTransactionHash;
         },
         enableModule: async (safeAddress: string, moduleAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (moduleAddress === "") {
                 toast.error("Module Address cannot be empty");
@@ -1268,7 +916,7 @@ export default function Governance() {
             contractReceipt?.status === 1 ? toast.success("Module enabled successfully") : toast.error("Module enable failed");
         },
         disableModule: async (safeAddress: string, moduleAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (moduleAddress === "") {
                 toast.error("Module Address cannot be empty");
@@ -1288,7 +936,7 @@ export default function Governance() {
             contractReceipt?.status === 1 ? toast.success("Module disabled successfully") : toast.error("Module disable failed");
         },
         swapOwner: async (safeAddress: string, oldOwnerAddress: string, newOwnerAddress: string, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (oldOwnerAddress === "") {
                 toast.error("Old Owner Address cannot be empty");
@@ -1313,7 +961,7 @@ export default function Governance() {
             contractReceipt?.status === 1 ? toast.success("Owner swapped successfully") : toast.error("Owner swap failed");
         },
         deploy: async (owners: string, threshold: string, safeVersion: SafeVersion, isL1SafeSingleton: boolean, contractNetworks?: ContractNetworksConfig) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (owners === "") {
                 toast.error("Owners cannot be empty");
@@ -1407,7 +1055,7 @@ export default function Governance() {
                     pending: `Granting timelock role "PROPOSER_ROLE" to governor...`,
                     success: {
                         render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                         }
                     }
                 }
@@ -1432,7 +1080,7 @@ export default function Governance() {
                     pending: `Grant timelock role "CANCELLER_ROLE" to governor...`,
                     success: {
                         render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                         }
                     }
                 }
@@ -1457,7 +1105,7 @@ export default function Governance() {
                     pending: `Grant timelock role "EXECUTOR_ROLE" to governor...`,
                     success: {
                         render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                         }
                     }
                 }
@@ -1482,7 +1130,7 @@ export default function Governance() {
                     pending: `Renounce timelock role "PROPOSER_ROLE" from deployer...`,
                     success: {
                         render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                         }
                     }
                 }
@@ -1507,7 +1155,7 @@ export default function Governance() {
                     pending: `Renounce timelock role "CANCELLER_ROLE" from deployer...`,
                     success: {
                         render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                         }
                     }
                 }
@@ -1532,7 +1180,7 @@ export default function Governance() {
                     pending: `Renounce timelock role "EXECUTOR_ROLE" from deployer...`,
                     success: {
                         render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                         }
                     }
                 }
@@ -1557,7 +1205,7 @@ export default function Governance() {
                     pending: `Renounce timelock role "TIMELOCK_ADMIN_ROLE" from deployer...`,
                     success: {
                         render({ data }) {
-                            return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                            return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                         }
                     }
                 }
@@ -1603,7 +1251,7 @@ export default function Governance() {
 
     const StewardSystem = {
         getSteward: async (contractAddress: string, targetAddress: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Steward Contract Address cannot be empty");
@@ -1623,7 +1271,7 @@ export default function Governance() {
             }
         },
         proposeSteward: async (contractAddress: string, stewardAction: StewardAction, targetAddress: string, newExpireTimestamp: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Steward Contract Address cannot be empty");
@@ -1650,7 +1298,7 @@ export default function Governance() {
                         pending: `Proposing Steward...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                             }
                         }
                     }
@@ -1672,7 +1320,7 @@ export default function Governance() {
             }
         },
         voteOnStewardProposal: async (contractAddress: string, proposalId: string, vote: Vote) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Steward Contract Address cannot be empty");
@@ -1694,7 +1342,7 @@ export default function Governance() {
                         pending: `Voting on Steward Proposal...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                             }
                         }
                     }
@@ -1716,7 +1364,7 @@ export default function Governance() {
             }
         },
         executeStewardProposal: async (contractAddress: string, proposalId: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Steward Contract Address cannot be empty");
@@ -1738,7 +1386,7 @@ export default function Governance() {
                         pending: `Executing Steward Proposal...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                             }
                         }
                     }
@@ -1760,7 +1408,7 @@ export default function Governance() {
             }
         },
         deploy: async (stewardAddresses: string, stewardExpireTimestamps: string, stewardProposalVoteDuration: string, owner: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (stewardAddresses === "") {
                 toast.error("Steward Addresses cannot be empty");
@@ -1804,7 +1452,7 @@ export default function Governance() {
                         pending: `Deploying Steward System...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessContractDeployTx(data);
+                                return toastSuccessContractDeployTx(data, chainExplorerUrl);
                             }
                         }
                     }
@@ -1815,7 +1463,7 @@ export default function Governance() {
                             pending: `Waiting for deployment...`,
                             success: {
                                 render({ data }) {
-                                    return toastSuccessContractDeployed(data);
+                                    return toastSuccessContractDeployed(data, chainExplorerUrl);
                                 }
                             }
                         }
@@ -1850,7 +1498,7 @@ export default function Governance() {
 
     const WorkingGroupSystem = {
         getWorkingGroups: async (contractAddress: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Working Group Contract Address cannot be empty");
@@ -1865,7 +1513,7 @@ export default function Governance() {
             }
         },
         getAllowance: async (contractAddress: string, workingGroupAddress: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Working Group Contract Address cannot be empty");
@@ -1885,7 +1533,7 @@ export default function Governance() {
             }
         },
         getWorkingGroup: async (contractAddress: string, targetAddress: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Working Group Contract Address cannot be empty");
@@ -1905,7 +1553,7 @@ export default function Governance() {
             }
         },
         proposeWorkingGroup: async (contractAddress: string, workingGroupAction: WorkingGroupAction, targetAddress: string, expireTimestamp: string, allowance: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Working Group Contract Address cannot be empty");
@@ -1937,7 +1585,7 @@ export default function Governance() {
                         pending: `Proposing Working Group...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                             }
                         }
                     }
@@ -1959,7 +1607,7 @@ export default function Governance() {
             }
         },
         executeWorkingGroupProposal: async (contractAddress: string, proposalId: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Working Group Contract Address cannot be empty");
@@ -1981,7 +1629,7 @@ export default function Governance() {
                         pending: `Executing Working Group Proposal...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                             }
                         }
                     }
@@ -2003,7 +1651,7 @@ export default function Governance() {
             }
         },
         voteOnWorkingGroupProposal: async (contractAddress: string, proposalId: string, vote: Vote) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (contractAddress === "") {
                 toast.error("Working Group Contract Address cannot be empty");
@@ -2025,7 +1673,7 @@ export default function Governance() {
                         pending: `Voting on Working Group Proposal...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse);
+                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
                             }
                         }
                     }
@@ -2054,7 +1702,7 @@ export default function Governance() {
             workingGroupAllowances: string,
             workingGroupProposalVoteDuration: string,
             owner: string) => {
-            if (!await checkNetwork()) return;
+            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
 
             if (safeAccountAddress === "") {
                 toast.error("Safe Account Address cannot be empty");
@@ -2118,7 +1766,7 @@ export default function Governance() {
                         pending: `Deploying Working Group System...`,
                         success: {
                             render({ data }) {
-                                return toastSuccessContractDeployTx(data);
+                                return toastSuccessContractDeployTx(data, chainExplorerUrl);
                             }
                         }
                     }
@@ -2129,7 +1777,7 @@ export default function Governance() {
                             pending: `Waiting for deployment...`,
                             success: {
                                 render({ data }) {
-                                    return toastSuccessContractDeployed(data);
+                                    return toastSuccessContractDeployed(data, chainExplorerUrl);
                                 }
                             }
                         }
@@ -2157,89 +1805,21 @@ export default function Governance() {
                 {address !== "" && <span>Address: {address}</span>}
             </div>
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion" open>
-                <summary>ETH</summary>
-                <div>
-                    <button className="ts-button" onClick={async () => await getBalance()}>Get Balance</button>
-                    <br></br>
-                    {balance !== "" && <span>{balance}</span>}
-                </div>
-                <br></br>
-                <div>
-                    <div className="ts-grid">
-                        <div className="ts-input column is-5-wide">
-                            <input type="text" placeholder="Address" id="eth-get-balance-of" />
-                        </div>
-                        <button className="ts-button" onClick={async () => await getBalanceOf((document.getElementById("eth-get-balance-of") as HTMLInputElement).value)}>Get Balance Of</button>
-                    </div>
-                </div>
-                <br></br>
-                <div>
-                    <button className="ts-button" onClick={async () => await signMessage()}>Sign Message</button>
-                    <br></br>
-                    {signedMessage !== "" && <span>{signedMessage}</span>}
-                </div>
-                <br></br>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Address" id="eth-send-to" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Amount" id="eth-send-amount" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await sendETH((document.getElementById("eth-send-to") as HTMLInputElement).value, (document.getElementById("eth-send-amount") as HTMLInputElement).value)}>Send ETH</button>
-                </div>
-            </details>
+            <Eth
+                chain={chain!}
+                chainExplorerUrl={chainExplorerUrl}
+                signer={signer!}
+                supportedChains={supportedChains}
+                switchChain={switchChain}
+            />
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion" open>
-                <summary>WETH</summary>
-                <div>
-                    <button className="ts-button" onClick={async () => await getWETHBalance()}>Get WETH Balance</button>
-                    <br></br>
-                    {wethBalance !== "" && <span>{wethBalance}</span>}
-                </div>
-                <br></br>
-                <div className="ts-grid">
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Amount" id="weth-wrap-amount" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await wrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Wrap ETH</button>
-                    <button className="ts-button" onClick={async () => await unwrapETH((document.getElementById("weth-wrap-amount") as HTMLInputElement).value)}>Unwrap WETH</button>
-                </div>
-                <br></br>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="To Address" id="weth-transfer-to" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Amount" id="weth-transfer-amount" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await transferWETH((document.getElementById("weth-transfer-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-amount") as HTMLInputElement).value)}>Transfer WETH</button>
-                </div>
-                <br></br>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Spender" id="weth-approve-spender" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Amount" id="weth-approve-amount" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await approveWETH((document.getElementById("weth-approve-spender") as HTMLInputElement).value, (document.getElementById("weth-approve-amount") as HTMLInputElement).value)}>Approve WETH</button>
-                </div>
-                <br></br>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="From Address" id="weth-transfer-from-from" />
-                    </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="To Address" id="weth-transfer-from-to" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Amount" id="weth-transfer-from-amount" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await transferWETHFrom((document.getElementById("weth-transfer-from-from") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-to") as HTMLInputElement).value, (document.getElementById("weth-transfer-from-amount") as HTMLInputElement).value)}>Transfer WETH From</button>
-                </div>
-            </details>
+            <Weth
+                chain={chain!}
+                chainExplorerUrl={chainExplorerUrl}
+                signer={signer!}
+                supportedChains={supportedChains}
+                switchChain={switchChain}
+            />
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion" open>
                 <summary>OpenZeppelin Ownable</summary>

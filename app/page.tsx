@@ -23,7 +23,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
 
 import { dAppName } from './constants';
-import Governance from "./components/governance";
+import Governance from "./governance/governance";
 
 export default function Home() {
     const localhostChain = {
