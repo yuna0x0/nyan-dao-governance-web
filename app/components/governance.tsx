@@ -1654,7 +1654,7 @@ export default function Governance() {
             if (!await checkNetwork()) return;
 
             if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
+                toast.error("Steward Contract Address cannot be empty");
                 return;
             }
 
@@ -1674,7 +1674,7 @@ export default function Governance() {
             if (!await checkNetwork()) return;
 
             if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
+                toast.error("Steward Contract Address cannot be empty");
                 return;
             }
 
@@ -1728,7 +1728,7 @@ export default function Governance() {
             if (!await checkNetwork()) return;
 
             if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
+                toast.error("Steward Contract Address cannot be empty");
                 return;
             }
 
@@ -1777,7 +1777,7 @@ export default function Governance() {
             if (!await checkNetwork()) return;
 
             if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
+                toast.error("Steward Contract Address cannot be empty");
                 return;
             }
 
@@ -1907,10 +1907,6 @@ export default function Governance() {
             }
         }
     };
-
-    // StewardSystem.isSelfSteward("0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0");
-    // Working Group: 0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE
-
     //#endregion Steward System
 
     //#region Working Group System
@@ -1930,7 +1926,7 @@ export default function Governance() {
             if (!await checkNetwork()) return;
 
             if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
+                toast.error("Working Group Contract Address cannot be empty");
                 return;
             }
 
@@ -1945,7 +1941,7 @@ export default function Governance() {
             if (!await checkNetwork()) return;
 
             if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
+                toast.error("Working Group Contract Address cannot be empty");
                 return;
             }
 
@@ -1965,7 +1961,7 @@ export default function Governance() {
             if (!await checkNetwork()) return;
 
             if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
+                toast.error("Working Group Contract Address cannot be empty");
                 return;
             }
 
@@ -1985,7 +1981,7 @@ export default function Governance() {
             if (!await checkNetwork()) return;
 
             if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
+                toast.error("Working Group Contract Address cannot be empty");
                 return;
             }
 
@@ -2039,7 +2035,7 @@ export default function Governance() {
             if (!await checkNetwork()) return;
 
             if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
+                toast.error("Working Group Contract Address cannot be empty");
                 return;
             }
 
@@ -2083,7 +2079,7 @@ export default function Governance() {
             if (!await checkNetwork()) return;
 
             if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
+                toast.error("Working Group Contract Address cannot be empty");
                 return;
             }
 
@@ -2775,6 +2771,7 @@ export default function Governance() {
                 <div className="ts-grid">
                     <button className="ts-button" onClick={async () => {
                         const stewardData = await StewardSystem.getSteward((document.getElementById("steward-features-system-address") as HTMLInputElement).value, address!);
+                        if (stewardData === undefined) return;
                         const isSteward = stewardData[0] === StewardStatus.Valid;
                         if (isSteward)
                             toast.info(`You are a steward. Steward Expire Date: ${new Date((stewardData[1] * 1000))} (${stewardData[1].toString()})`);
@@ -2786,6 +2783,7 @@ export default function Governance() {
                 <div className="ts-grid">
                     <button className="ts-button" onClick={async () => {
                         const workingGroups = await WorkingGroupSystem.getWorkingGroups((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value);
+                        if (workingGroups === undefined) return;
                         workingGroups.forEach(async (workingGroup: string) => {
                             const allowance = await WorkingGroupSystem.getAllowance((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, workingGroup);
                             const workingGroupData = await WorkingGroupSystem.getWorkingGroup((document.getElementById("steward-features-working-group-address") as HTMLInputElement).value, workingGroup);
