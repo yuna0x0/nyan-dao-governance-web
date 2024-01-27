@@ -8,12 +8,17 @@ import {
     useAddress,
     useSwitchChain
 } from "@thirdweb-dev/react";
-import { ethers, BigNumber } from "ethers";
+import { ethers } from "ethers";
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import type { Chain } from "@thirdweb-dev/chains";
-import ozOwnable from "@openzeppelin/contracts/build/contracts/Ownable.json";
-import { EthersAdapter, ContractNetworksConfig, SafeFactory, SafeAccountConfig, SafeTransactionOptionalProps } from '@safe-global/protocol-kit';
+import {
+    EthersAdapter,
+    ContractNetworksConfig,
+    SafeFactory,
+    SafeAccountConfig,
+    SafeTransactionOptionalProps
+} from '@safe-global/protocol-kit';
 import Safe from '@safe-global/protocol-kit';
 import { SafeVersion, MetaTransactionData } from '@safe-global/safe-core-sdk-types';
 import { randomBytes } from 'crypto';
@@ -27,19 +32,18 @@ import {
     DEFAULT_SAFE_FACTORY_SIGN_MESSAGE_LIB_ADDRESS,
     DEFAULT_SAFE_FACTORY_CREATE_CALL_ADDRESS,
     DEFAULT_SAFE_FACTORY_SIMULATE_TX_ACCESSOR_ADDRESS,
-    ERC20_BYTECODE,
-    ERC20_ABI,
-    OZ_TIMELOCK_BYTECODE,
-    OZ_TIMELOCK_ABI,
-    OZ_GOVERNOR_BYTECODE,
-    OZ_GOVERNOR_ABI,
     STEWARD_SYSTEM_BYTECODE,
     STEWARD_SYSTEM_ABI,
     WORKING_GROUP_SYSTEM_BYTECODE,
     WORKING_GROUP_SYSTEM_ABI
 } from "../constants";
+import { ERC20 } from "./components/erc20";
+import { OZTimelock, OZGovernor } from "./components/oz-governor";
 import Eth from "./components/eth";
 import Weth from "./components/weth";
+import OzOwnable from "./components/oz-ownable";
+import Erc20 from "./components/erc20";
+import OzGovernor from "./components/oz-governor";
 
 //#region NetworkCheckFunctions
 export const isVaildNetwork = (
@@ -175,541 +179,6 @@ export default function Governance() {
         else
             return `Deployed Safe Address: ${safeAddress}`;
     };
-
-    //#region OpenZeppelin Ownable
-    const OZOwnable = {
-        getOwner: async (address: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (address === "") {
-                toast.error("Address cannot be empty");
-                return;
-            }
-
-            try {
-                const contract = new ethers.Contract(address, ozOwnable.abi, signer);
-                const owner = await contract.owner();
-                toast.success(`Owner: ${owner}`);
-            } catch (e) {
-                handleError(e);
-            }
-        },
-        transferOwnership: async (address: string, newOwner: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (address === "") {
-                toast.error("Address cannot be empty");
-                return;
-            }
-
-            if (newOwner === "") {
-                toast.error("New Owner cannot be empty");
-                return;
-            }
-
-            try {
-                const contract = new ethers.Contract(address, ozOwnable.abi, signer);
-                const tx = contract.transferOwnership(newOwner);
-                await toast.promise(
-                    tx,
-                    {
-                        pending: `Transferring ownership to ${newOwner}...`,
-                        success: {
-                            render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
-                            }
-                        }
-                    }
-                ).then(async (tx) => {
-                    await toast.promise(
-                        (tx as ethers.providers.TransactionResponse).wait(),
-                        {
-                            pending: `Waiting for transaction...`,
-                            success: "Transaction confirmed"
-                        }
-                    ).catch((e) => {
-                        throw e;
-                    });
-                }, (e) => {
-                    throw e;
-                });
-            } catch (e) {
-                handleError(e);
-            }
-        },
-        renounceOwnership: async (address: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (address === "") {
-                toast.error("Address cannot be empty");
-                return;
-            }
-
-            try {
-                const contract = new ethers.Contract(address, ozOwnable.abi, signer);
-                const tx = contract.renounceOwnership();
-                await toast.promise(
-                    tx,
-                    {
-                        pending: `Renouncing ownership...`,
-                        success: {
-                            render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
-                            }
-                        }
-                    }
-                ).then(async (tx) => {
-                    await toast.promise(
-                        (tx as ethers.providers.TransactionResponse).wait(),
-                        {
-                            pending: `Waiting for transaction...`,
-                            success: "Transaction confirmed"
-                        }
-                    ).catch((e) => {
-                        throw e;
-                    });
-                }, (e) => {
-                    throw e;
-                });
-            } catch (e) {
-                handleError(e);
-            }
-        }
-    };
-    //#endregion OpenZeppelin Ownable
-
-    //#region ERC20
-    const ERC20 = {
-        abi: ERC20_ABI,
-        bytecode: ERC20_BYTECODE,
-        getName: async (address: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (address === "") {
-                toast.error("Address cannot be empty");
-                return;
-            }
-
-            try {
-                const contract = new ethers.Contract(address, ERC20.abi, signer);
-                const name = await contract.name();
-                toast.success(`Name: ${name}`);
-            } catch (e) {
-                handleError(e);
-            }
-        },
-        getSymbol: async (address: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (address === "") {
-                toast.error("Address cannot be empty");
-                return;
-            }
-
-            try {
-                const contract = new ethers.Contract(address, ERC20.abi, signer);
-                const symbol = await contract.symbol();
-                toast.success(`Symbol: ${symbol}`);
-            } catch (e) {
-                handleError(e);
-            }
-        },
-        getDecimals: async (address: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (address === "") {
-                toast.error("Address cannot be empty");
-                return;
-            }
-
-            try {
-                const contract = new ethers.Contract(address, ERC20.abi, signer);
-                const decimals = await contract.decimals();
-                toast.success(`Decimals: ${decimals}`);
-            } catch (e) {
-                handleError(e);
-            }
-        },
-        getTotalSupply: async (address: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (address === "") {
-                toast.error("Address cannot be empty");
-                return;
-            }
-
-            try {
-                const contract = new ethers.Contract(address, ERC20.abi, signer);
-                const totalSupply = await contract.totalSupply();
-                toast.success(`Total Supply: ${totalSupply.div(BigNumber.from(10).pow(await contract.decimals()))} ${await contract.symbol()} (${totalSupply})`);
-            } catch (e) {
-                handleError(e);
-            }
-        },
-        mint: async (contractAddress: string, to: string, amount: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
-                return;
-            }
-
-            if (to === "") {
-                toast.error("To Address cannot be empty");
-                return;
-            }
-
-            if (amount === "") {
-                toast.error("Amount cannot be empty");
-                return;
-            }
-
-            try {
-                const contract = new ethers.Contract(contractAddress, ERC20.abi, signer);
-                const tx = contract.mint(to, ethers.utils.parseEther(amount));
-                await toast.promise(
-                    tx,
-                    {
-                        pending: `Minting ${amount} ${await contract.symbol()} to ${to}...`,
-                        success: {
-                            render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
-                            }
-                        }
-                    }
-                ).then(async (tx) => {
-                    await toast.promise(
-                        (tx as ethers.providers.TransactionResponse).wait(),
-                        {
-                            pending: `Waiting for transaction...`,
-                            success: "Transaction confirmed"
-                        }
-                    ).catch((e) => {
-                        throw e;
-                    });
-                }, (e) => {
-                    throw e;
-                });
-            } catch (e) {
-                handleError(e);
-            }
-        },
-        burnFrom: async (contractAddress: string, account: string, amount: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (contractAddress === "") {
-                toast.error("Contract Address cannot be empty");
-                return;
-            }
-
-            if (account === "") {
-                toast.error("Account Address cannot be empty");
-                return;
-            }
-
-            if (amount === "") {
-                toast.error("Amount cannot be empty");
-                return;
-            }
-
-            try {
-                const contract = new ethers.Contract(contractAddress, ERC20.abi, signer);
-                const tx = contract.burnFrom(account, ethers.utils.parseEther(amount));
-                await toast.promise(
-                    tx,
-                    {
-                        pending: `Burning ${amount} ${await contract.symbol()} from ${account}...`,
-                        success: {
-                            render({ data }) {
-                                return toastSuccessTx(data as ethers.providers.TransactionResponse, chainExplorerUrl);
-                            }
-                        }
-                    }
-                ).then(async (tx) => {
-                    await toast.promise(
-                        (tx as ethers.providers.TransactionResponse).wait(),
-                        {
-                            pending: `Waiting for transaction...`,
-                            success: "Transaction confirmed"
-                        }
-                    ).catch((e) => {
-                        throw e;
-                    });
-                }, (e) => {
-                    throw e;
-                });
-            } catch (e) {
-                handleError(e);
-            }
-        },
-        deploy: async (owner: string, name: string, symbol: string, initSupply: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (owner === "") {
-                toast.error("Owner cannot be empty");
-                return;
-            }
-
-            if (name === "") {
-                toast.error("Token Name cannot be empty");
-                return;
-            }
-
-            if (symbol === "") {
-                toast.error("Symbol cannot be empty");
-                return;
-            }
-
-            if (initSupply === "") {
-                toast.error("Initial Supply cannot be empty");
-                return;
-            }
-
-            try {
-                const factory = new ethers.ContractFactory(ERC20.abi, ERC20.bytecode, signer);
-                const tx = factory.deploy(owner, name, symbol, initSupply);
-
-                let deployedAddress: string | undefined;
-
-                await toast.promise(
-                    tx,
-                    {
-                        pending: `Deploying ERC20 Token...`,
-                        success: {
-                            render({ data }) {
-                                return toastSuccessContractDeployTx(data, chainExplorerUrl);
-                            }
-                        }
-                    }
-                ).then(async (contract) => {
-                    await toast.promise(
-                        contract.deployTransaction.wait(),
-                        {
-                            pending: `Waiting for deployment...`,
-                            success: {
-                                render({ data }) {
-                                    return toastSuccessContractDeployed(data, chainExplorerUrl);
-                                }
-                            }
-                        }
-                    ).then((transactionReceipt) => {
-                        deployedAddress = transactionReceipt.contractAddress;
-                    }, (e) => {
-                        throw e;
-                    });
-                }, (e) => {
-                    throw e;
-                });
-
-                return deployedAddress;
-            } catch (e) {
-                handleError(e);
-            }
-        }
-    };
-    //#endregion ERC20
-
-    //#region OpenZeppelin Governor
-    const OZGovernor = {
-        abi: OZ_GOVERNOR_ABI,
-        bytecode: OZ_GOVERNOR_BYTECODE,
-        getName: async (address: string) => {
-            {
-                if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-                if (address === "") {
-                    toast.error("Address cannot be empty");
-                    return;
-                }
-
-                try {
-                    const contract = new ethers.Contract(address, OZGovernor.abi, signer);
-                    const governorName = await contract.name();
-                    toast.success(`Governor Name: ${governorName}`);
-                } catch (e) {
-                    handleError(e);
-                }
-            }
-        },
-        deploy: async (tokenAddress: string, timelockAddress: string, governorName: string, votingDelayBlock: string, votingPeriodBlock: string, proposalThreshold: string, quorumNumerator: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (tokenAddress === "") {
-                toast.error("Token Address cannot be empty");
-                return;
-            }
-
-            if (timelockAddress === "") {
-                toast.error("Timelock Address cannot be empty");
-                return;
-            }
-
-            if (governorName === "") {
-                toast.error("Governor Name cannot be empty");
-                return;
-            }
-
-            if (votingDelayBlock === "") {
-                toast.error("Voting Delay Block cannot be empty");
-                return;
-            }
-
-            if (votingPeriodBlock === "") {
-                toast.error("Voting Period Block cannot be empty");
-                return;
-            }
-
-            if (proposalThreshold === "") {
-                toast.error("Proposal Threshold cannot be empty");
-                return;
-            }
-
-            if (quorumNumerator === "") {
-                toast.error("Quorum Numerator cannot be empty");
-                return;
-            }
-
-            try {
-                const factory = new ethers.ContractFactory(OZGovernor.abi, OZGovernor.bytecode, signer);
-                const tx = factory.deploy(tokenAddress, timelockAddress, governorName, votingDelayBlock, votingPeriodBlock, proposalThreshold, quorumNumerator);
-
-                let deployedAddress: string | undefined;
-
-                await toast.promise(
-                    tx,
-                    {
-                        pending: `Deploying OZ Governor...`,
-                        success: {
-                            render({ data }) {
-                                return toastSuccessContractDeployTx(data, chainExplorerUrl);
-                            }
-                        }
-                    }
-                ).then(async (contract) => {
-                    await toast.promise(
-                        contract.deployTransaction.wait(),
-                        {
-                            pending: `Waiting for deployment...`,
-                            success: {
-                                render({ data }) {
-                                    return toastSuccessContractDeployed(data, chainExplorerUrl);
-                                }
-                            }
-                        }
-                    ).then((transactionReceipt) => {
-                        deployedAddress = transactionReceipt.contractAddress;
-                    }, (e) => {
-                        throw e;
-                    });
-                }, (e) => {
-                    throw e;
-                });
-
-                return deployedAddress;
-            } catch (e) {
-                handleError(e);
-            }
-        }
-    };
-
-    const OZTimelock = {
-        abi: OZ_TIMELOCK_ABI,
-        bytecode: OZ_TIMELOCK_BYTECODE,
-        getMinDelay: async (address: string) => {
-            {
-                if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-                if (address === "") {
-                    toast.error("Address cannot be empty");
-                    return;
-                }
-
-                try {
-                    const contract = new ethers.Contract(address, OZTimelock.abi, signer);
-                    const minDelay = await contract.getMinDelay();
-                    toast.success(`Minimum Delay: ${minDelay}`);
-                } catch (e) {
-                    handleError(e);
-                }
-            }
-        },
-        deploy: async (minDelay: string, proposers: string, executors: string, admin: string) => {
-            if (!await checkNetwork(chain, supportedChains, switchChain)) return;
-
-            if (minDelay === "") {
-                toast.error("Minimum Delay cannot be empty");
-                return;
-            }
-
-            if (proposers === "") {
-                toast.error("Proposers cannot be empty");
-                return;
-            }
-
-            if (executors === "") {
-                toast.error("Executors cannot be empty");
-                return;
-            }
-
-            if (admin === "") {
-                toast.error("Admin cannot be empty");
-                return;
-            }
-
-            let proposersArray: string[] = [];
-            proposers.split(",").forEach((proposer) => {
-                proposersArray.push(proposer.trim());
-            });
-
-            let executorsArray: string[] = [];
-            executors.split(",").forEach((executor) => {
-                executorsArray.push(executor.trim());
-            });
-
-            try {
-                const factory = new ethers.ContractFactory(OZTimelock.abi, OZTimelock.bytecode, signer);
-                const tx = factory.deploy(minDelay, proposersArray, executorsArray, admin);
-
-                let deployedAddress: string | undefined;
-
-                await toast.promise(
-                    tx,
-                    {
-                        pending: `Deploying OZ Timelock...`,
-                        success: {
-                            render({ data }) {
-                                return toastSuccessContractDeployTx(data, chainExplorerUrl);
-                            }
-                        }
-                    }
-                ).then(async (contract) => {
-                    await toast.promise(
-                        contract.deployTransaction.wait(),
-                        {
-                            pending: `Waiting for deployment...`,
-                            success: {
-                                render({ data }) {
-                                    return toastSuccessContractDeployed(data, chainExplorerUrl);
-                                }
-                            }
-                        }
-                    ).then((transactionReceipt) => {
-                        deployedAddress = transactionReceipt.contractAddress;
-                    }, (e) => {
-                        throw e;
-                    });
-                }, (e) => {
-                    throw e;
-                });
-
-                return deployedAddress;
-            } catch (e) {
-                handleError(e);
-            }
-        }
-
-    };
-    //#endregion OpenZeppelin Governor
 
     //#region Safe
     const onClickSafeConfig = (customSafeFactory: boolean) => {
@@ -1031,20 +500,59 @@ export default function Governance() {
             // const DAOToken = new ethers.ContractFactory(ERC20.abi, ERC20.bytecode, signer);
             // const DAOGovernor = new ethers.ContractFactory(OZGovernor.abi, OZGovernor.bytecode, signer);
 
-            const daoTimelockAddress = await OZTimelock.deploy(timelockMinDelay, deployerAddress, deployerAddress, deployerAddress);
+            const daoTimelockAddress = await OZTimelock.deploy(
+                timelockMinDelay,
+                deployerAddress,
+                deployerAddress,
+                deployerAddress,
+                chain!,
+                chainExplorerUrl,
+                signer!,
+                supportedChains,
+                switchChain);
             if (daoTimelockAddress === undefined) return;
             const daoTimelock = DAOTimelock.attach(daoTimelockAddress);
 
             let daoTokenAddress;
             if (tokenOwner === "Timelock")
-                daoTokenAddress = await ERC20.deploy(daoTimelockAddress, tokenName, tokenSymbol, "0");
+                daoTokenAddress = await ERC20.deploy(
+                    daoTimelockAddress,
+                    tokenName,
+                    tokenSymbol,
+                    "0",
+                    chain!,
+                    chainExplorerUrl,
+                    signer!,
+                    supportedChains,
+                    switchChain);
             else
-                daoTokenAddress = await ERC20.deploy(tokenOwner, tokenName, tokenSymbol, "0");
+                daoTokenAddress = await ERC20.deploy(
+                    tokenOwner,
+                    tokenName,
+                    tokenSymbol,
+                    "0",
+                    chain!,
+                    chainExplorerUrl,
+                    signer!,
+                    supportedChains,
+                    switchChain);
 
             if (daoTokenAddress === undefined) return;
             // const daoToken = DAOToken.attach(daoTokenAddress!);
 
-            const daoGovernorAddress = await OZGovernor.deploy(daoTokenAddress, daoTimelockAddress, governorName, governorVotingDelayBlock, governorVotingPeriodBlock, governorProposalThreshold, governorQuorumNumerator);
+            const daoGovernorAddress = await OZGovernor.deploy(
+                daoTokenAddress,
+                daoTimelockAddress,
+                governorName,
+                governorVotingDelayBlock,
+                governorVotingPeriodBlock,
+                governorProposalThreshold,
+                governorQuorumNumerator,
+                chain!,
+                chainExplorerUrl,
+                signer!,
+                supportedChains,
+                switchChain);
             if (daoGovernorAddress === undefined) return;
             // const daoGovernor = DAOGovernor.attach(daoGovernorAddress!);
 
@@ -1821,154 +1329,29 @@ export default function Governance() {
                 switchChain={switchChain}
             />
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion" open>
-                <summary>OpenZeppelin Ownable</summary>
-                <p>Get Owner</p>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Target Contract Address" id="ownable-get-owner-target" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await OZOwnable.getOwner((document.getElementById("ownable-get-owner-target") as HTMLInputElement).value)}>Get Owner</button>
-                </div>
-                <br></br>
-                <p>Transfer Ownership</p>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Target Contract Address" id="ownable-transfer-owner-target" />
-                    </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="New Owner Address" id="ownable-transfer-owner-address" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await OZOwnable.transferOwnership((document.getElementById("ownable-transfer-owner-target") as HTMLInputElement).value, (document.getElementById("ownable-transfer-owner-address") as HTMLInputElement).value)}>Transfer Ownership</button>
-                </div>
-                <br></br>
-                <p>Renounce Ownership</p>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Target Contract Address" id="ownable-renounce-owner-target" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await OZOwnable.renounceOwnership((document.getElementById("ownable-renounce-owner-target") as HTMLInputElement).value)}>Renounce Ownership</button>
-                </div>
-            </details>
+            <OzOwnable
+                chain={chain!}
+                chainExplorerUrl={chainExplorerUrl}
+                signer={signer!}
+                supportedChains={supportedChains}
+                switchChain={switchChain}
+            />
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion" open>
-                <summary>ERC20 Token</summary>
-                <p>Deployment</p>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Owner Address" id="erc20-deploy-owner" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Token Name" id="erc20-deploy-name" />
-                    </div>
-                    <div className="ts-input column is-2-wide">
-                        <input type="text" placeholder="Symbol" id="erc20-deploy-symbol" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Initial Supply" id="erc20-deploy-init-supply" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await ERC20.deploy((document.getElementById("erc20-deploy-owner") as HTMLInputElement).value, (document.getElementById("erc20-deploy-name") as HTMLInputElement).value, (document.getElementById("erc20-deploy-symbol") as HTMLInputElement).value, (document.getElementById("erc20-deploy-init-supply") as HTMLInputElement).value)}>Deploy ERC20 Token</button>
-                </div>
-                <br></br>
-                <p>Write</p>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Token Address" id="erc20-write-mint-address" />
-                    </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Mint To" id="erc20-write-mint-to" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Value" id="erc20-write-mint-value" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await ERC20.mint((document.getElementById("erc20-write-mint-address") as HTMLInputElement).value, (document.getElementById("erc20-write-mint-to") as HTMLInputElement).value, (document.getElementById("erc20-write-mint-value") as HTMLInputElement).value)}>Mint</button>
-                </div>
-                <br></br>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Token Address" id="erc20-write-burn-address" />
-                    </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Burn From" id="erc20-write-burn-from" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Value" id="erc20-write-burn-value" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await ERC20.burnFrom((document.getElementById("erc20-write-burn-address") as HTMLInputElement).value, (document.getElementById("erc20-write-burn-from") as HTMLInputElement).value, (document.getElementById("erc20-write-burn-value") as HTMLInputElement).value)}>Burn From</button>
-                </div>
-                <br></br>
-                <p>Contract Read</p>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Token Address" id="erc20-test-address" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await ERC20.getName((document.getElementById("erc20-test-address") as HTMLInputElement).value)}>Get ERC20 Name</button>
-                    <button className="ts-button" onClick={async () => await ERC20.getSymbol((document.getElementById("erc20-test-address") as HTMLInputElement).value)}>Get ERC20 Symbol</button>
-                    <button className="ts-button" onClick={async () => await ERC20.getDecimals((document.getElementById("erc20-test-address") as HTMLInputElement).value)}>Get ERC20 Decimals</button>
-                    <button className="ts-button" onClick={async () => await ERC20.getTotalSupply((document.getElementById("erc20-test-address") as HTMLInputElement).value)}>Get ERC20 Total Supply</button>
-                </div>
-            </details>
+            <Erc20
+                chain={chain!}
+                chainExplorerUrl={chainExplorerUrl}
+                signer={signer!}
+                supportedChains={supportedChains}
+                switchChain={switchChain}
+            />
             <div className="ts-divider has-vertically-spaced"></div>
-            <details className="ts-accordion" open>
-                <summary>OpenZeppelin Governor</summary>
-                <p>Timelock Deployment</p>
-                <div className="ts-grid">
-                    <div className="ts-input column is-4-wide">
-                        <input type="text" placeholder="Minimum Delay (in seconds)" id="oz-timelock-deploy-min-delay" />
-                    </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Proposers" id="oz-timelock-deploy-proposers" />
-                    </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Executors" id="oz-timelock-deploy-executors" />
-                    </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Admin" id="oz-timelock-deploy-admin" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await OZTimelock.deploy((document.getElementById("oz-timelock-deploy-min-delay") as HTMLInputElement).value, (document.getElementById("oz-timelock-deploy-proposers") as HTMLInputElement).value, (document.getElementById("oz-timelock-deploy-executors") as HTMLInputElement).value, (document.getElementById("oz-timelock-deploy-admin") as HTMLInputElement).value)}>Deploy OZ Timelock</button>
-                </div>
-                <br></br>
-                <p>Governor Deployment</p>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Token Address" id="oz-governor-deploy-token-address" />
-                    </div>
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Timelock Address" id="oz-governor-deploy-timelock-address" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Governor Name" id="oz-governor-deploy-governor-name" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Voting Delay (in blocks)" id="oz-governor-deploy-voting-delay-block" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Voting Period (in blocks)" id="oz-governor-deploy-voting-period-block" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Proposal Threshold" id="oz-governor-deploy-proposal-threshold" />
-                    </div>
-                    <div className="ts-input column is-3-wide">
-                        <input type="text" placeholder="Quorum Numerator (%)" id="oz-governor-deploy-quorum-numerator" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await OZGovernor.deploy((document.getElementById("oz-governor-deploy-token-address") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-timelock-address") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-governor-name") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-voting-delay-block") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-voting-period-block") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-proposal-threshold") as HTMLInputElement).value, (document.getElementById("oz-governor-deploy-quorum-numerator") as HTMLInputElement).value)}>Deploy OZ Governor</button>
-                </div>
-                <br></br>
-                <p>Contract Read</p>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Timelock Address" id="oz-timelock-test-address" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await OZTimelock.getMinDelay((document.getElementById("oz-timelock-test-address") as HTMLInputElement).value)}>Get OZ Timelock Minimum Delay</button>
-                </div>
-                <br></br>
-                <div className="ts-grid">
-                    <div className="ts-input column is-5-wide">
-                        <input type="text" placeholder="Governor Address" id="oz-governor-test-address" />
-                    </div>
-                    <button className="ts-button" onClick={async () => await OZGovernor.getName((document.getElementById("oz-governor-test-address") as HTMLInputElement).value)}>Get OZ Governor Name</button>
-                </div>
-            </details>
+            <OzGovernor
+                chain={chain!}
+                chainExplorerUrl={chainExplorerUrl}
+                signer={signer!}
+                supportedChains={supportedChains}
+                switchChain={switchChain}
+            />
             <div className="ts-divider has-vertically-spaced"></div>
             <details className="ts-accordion" open>
                 <summary><strong>DAO Deployment</strong></summary>
@@ -2418,7 +1801,6 @@ export default function Governance() {
                 <summary><strong>Token Holder Features</strong></summary>
             </details> */}
             <div className="has-vertically-spaced"></div>
-
         </div >
     );
 }
